@@ -1,0 +1,41 @@
+{
+  "patient_id": "patient_001",
+  "name": "Preethi D",
+  "preferred_name": "Preethu",
+  "other_nicknames": ["Preetz", "Maha", "Maida Maavu"],
+  "stage": "mid",
+  "profession": "Working professional (software engineer), mid-40s",
+  "places_lived": ["Mandaveli", "Mylapore", "Saveetha Engineering College hostel"],
+  "education": ["St. John's Senior Secondary School", "Saveetha Engineering College"],
+  "relationships": [
+    { "name": "Priyamvadha", "relation": "mother", "status": "living", "notes": "" },
+    { "name": "Durga Prasad", "relation": "father", "status": "living", "notes": "" },
+    { "name": "Ramya D", "relation": "sister", "status": "living", "notes": "" },
+    { "name": "Saraswathi", "relation": "grandmother", "status": "living", "notes": "" },
+    { "name": "Bhanu", "relation": "grandparent", "status": "living", "notes": "" },
+    { "name": "Balu", "relation": "grandparent", "status": "living", "notes": "" },
+    { "name": "Nagarajan", "relation": "grandparent", "status": "deceased", "notes": "" },
+    { "name": "Shivani K", "relation": "best friend", "status": "living", "notes": "" },
+    { "name": "Trinethra S", "relation": "best friend", "status": "living", "notes": "" },
+    { "name": "Nivetha K M", "relation": "best friend", "status": "living", "notes": "" },
+    { "name": "Hari Priya M", "relation": "best friend", "status": "living", "notes": "" },
+    { "name": "Nandhini N", "relation": "best friend", "status": "living", "notes": "" },
+    { "name": "Vigneshwaran S", "relation": "best friend", "status": "living", "notes": "" },
+    { "name": "Naghul Varshan N", "relation": "best friend", "status": "living", "notes": "" },
+    { "name": "Shayaam A", "relation": "best friend", "status": "living", "notes": "" }
+  ],
+  "significant_events": [
+    "Was Head Girl in school",
+    "Completed an internship at Presidio",
+    "Worked at JP Morgan"
+  ],
+  "preferences": {
+    "likes": ["eating good food"],
+    "dislikes": ["hot places / hot weather"]
+  },
+  "cherished_memories": [
+    "A trip with her closest friends",
+    "Being named Head Girl in school (added — pairs naturally with the school milestone above)",
+    "Her first day at JP Morgan (added — pairs with the work history above)"
+  ]
+}
