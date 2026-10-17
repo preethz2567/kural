@@ -1,24 +1,33 @@
+/* ==========================================================================
+   Kural — Patient Chat UI Styles (Dementia-Friendly Warm Palette)
+   ========================================================================== */
+
+/* Main App Shell */
 .kural-app-container {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  max-width: 960px;
+  max-width: 920px;
+  min-width: 320px;
   margin: 0 auto;
   background: var(--bg-surface);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
   border-left: 1px solid var(--border-subtle);
   border-right: 1px solid var(--border-subtle);
+  box-shadow: 0 8px 30px rgba(81, 67, 74, 0.05);
+  overflow: hidden;
 }
 
-/* Header */
+/* --------------------------------------------------------------------------
+   Header & Branding
+   -------------------------------------------------------------------------- */
 .kural-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
+  padding: 14px 22px;
   background: var(--bg-header);
   border-bottom: 1px solid var(--border-subtle);
-  gap: 16px;
+  gap: 14px;
   flex-wrap: wrap;
 }
 
@@ -31,15 +40,16 @@
 .logo-badge {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--kural-pink) 0%, var(--kural-pink-dark) 100%);
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 20px;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  font-size: 19px;
+  box-shadow: 0 3px 10px rgba(217, 121, 156, 0.3);
+  flex-shrink: 0;
 }
 
 .header-title {
@@ -47,87 +57,100 @@
   font-size: 20px;
   font-weight: 700;
   color: var(--text-heading);
+  letter-spacing: -0.3px;
   line-height: 1.2;
 }
 
 .header-subtitle {
-  margin: 2px 0 0 0;
-  font-size: 13px;
+  margin: 1px 0 0 0;
+  font-size: 12.5px;
   color: var(--text-muted);
+  line-height: 1.3;
 }
 
 .header-controls {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .patient-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   font-size: 12px;
   font-weight: 600;
   color: var(--text-heading);
   background: var(--pill-bg);
-  padding: 6px 12px;
-  border-radius: 20px;
-  border: 1px solid var(--border-subtle);
+  padding: 5px 12px;
+  border-radius: 9999px;
+  border: 1px solid var(--border-interactive);
 }
 
 .dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .dot-active {
-  background: #10b981;
+  background: var(--kural-pink);
+  box-shadow: 0 0 0 2px var(--kural-pink-soft);
 }
 
 .mode-badge {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
-  padding: 5px 10px;
-  border-radius: 6px;
-  letter-spacing: 0.3px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  letter-spacing: 0.2px;
 }
 
 .mode-mock {
-  background: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fde68a;
+  background: var(--bubble-companion-bg);
+  color: var(--kural-pink-dark);
+  border: 1px solid var(--border-interactive);
 }
 
 .mode-live {
-  background: #dbeafe;
-  color: #1e40af;
-  border: 1px solid #bfdbfe;
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
 }
 
 .btn-reset {
   background: transparent;
-  border: 1px solid var(--border-interactive);
-  color: var(--text-heading);
-  font-size: 12px;
-  font-weight: 600;
-  padding: 6px 12px;
-  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
+  min-height: 30px;
 }
 
 .btn-reset:hover {
   background: var(--btn-hover-bg);
-  border-color: var(--text-muted);
+  border-color: var(--border-interactive);
+  color: var(--text-heading);
 }
 
-/* Chat Viewport */
+.btn-reset:focus-visible {
+  outline: 2px solid var(--kural-pink);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Chat Viewport & Message Stream
+   -------------------------------------------------------------------------- */
 .chat-viewport {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 20px 24px;
   background: var(--bg-body);
   display: flex;
   flex-direction: column;
@@ -155,22 +178,24 @@
 
 .message-bubble {
   max-width: 80%;
-  padding: 14px 18px;
-  line-height: 1.5;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 15px 18px;
+  line-height: 1.6;
+  box-shadow: 0 2px 8px rgba(81, 67, 74, 0.04);
 }
 
 .message-row-companion .message-bubble {
   background: var(--bubble-companion-bg);
   color: var(--bubble-companion-text);
   border: 1px solid var(--border-subtle);
-  border-radius: 16px 16px 16px 4px;
+  border-radius: 18px 18px 18px 6px;
 }
 
 .message-row-user .message-bubble {
   background: var(--bubble-user-bg);
   color: #ffffff;
-  border-radius: 16px 16px 4px 16px;
+  border: 1px solid transparent;
+  border-radius: 18px 18px 6px 18px;
+  box-shadow: 0 3px 12px rgba(217, 121, 156, 0.26);
 }
 
 .message-header {
@@ -178,9 +203,16 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 6px;
-  font-size: 11px;
-  opacity: 0.85;
+  margin-bottom: 5px;
+  font-size: 11.5px;
+}
+
+.message-row-companion .message-header {
+  color: var(--text-muted);
+}
+
+.message-row-user .message-header {
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .message-sender {
@@ -191,43 +223,102 @@
 }
 
 .tag-mock {
-  background: rgba(146, 64, 14, 0.15);
-  color: #92400e;
+  background: rgba(169, 78, 115, 0.12);
+  color: var(--kural-pink-dark);
   padding: 1px 5px;
   border-radius: 4px;
   font-size: 10px;
+  font-weight: 600;
   text-transform: uppercase;
-}
-
-.message-row-user .message-sender {
-  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 0.5px;
 }
 
 .message-time {
   font-size: 11px;
+  opacity: 0.85;
 }
 
 .message-content {
-  font-size: 15px;
+  font-size: 15.5px;
+  line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-/* Typing Indicator */
+/* --------------------------------------------------------------------------
+   Conversation Starters Card
+   -------------------------------------------------------------------------- */
+.conversation-starters-card {
+  margin: 8px 0 16px;
+  padding: 18px 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(81, 67, 74, 0.03);
+}
+
+.starters-prompt {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.starters-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.starter-btn {
+  background: var(--pill-bg);
+  border: 1px solid var(--border-interactive);
+  color: var(--text-heading);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.starter-btn:hover:not(:disabled) {
+  background: var(--btn-hover-bg);
+  border-color: var(--kural-pink);
+  color: var(--kural-pink-dark);
+  transform: translateY(-1px);
+}
+
+.starter-btn:focus-visible {
+  outline: 2px solid var(--kural-pink);
+  outline-offset: 2px;
+}
+
+.starter-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* --------------------------------------------------------------------------
+   Typing Indicator
+   -------------------------------------------------------------------------- */
 .loading-bubble {
-  padding: 16px 22px;
+  padding: 14px 20px;
 }
 
 .typing-indicator {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 
 .typing-indicator span {
   width: 7px;
   height: 7px;
-  background: #9ca3af;
+  background: var(--kural-pink);
   border-radius: 50%;
   animation: typingBounce 1.4s infinite ease-in-out both;
 }
@@ -242,8 +333,8 @@
 
 @keyframes typingBounce {
   0%, 80%, 100% {
-    transform: scale(0);
-    opacity: 0.4;
+    transform: scale(0.3);
+    opacity: 0.35;
   }
   40% {
     transform: scale(1);
@@ -251,15 +342,19 @@
   }
 }
 
-/* Banners */
+/* --------------------------------------------------------------------------
+   Notification & Error Banners
+   -------------------------------------------------------------------------- */
 .banner {
-  padding: 12px 16px;
-  margin-bottom: 16px;
-  border-radius: 8px;
+  padding: 11px 16px;
+  margin-bottom: 14px;
+  border-radius: 12px;
   font-size: 13px;
+  line-height: 1.45;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
 }
 
 .banner-warning {
@@ -268,35 +363,53 @@
   border: 1px solid #fde68a;
 }
 
+.banner-warning code {
+  background: rgba(146, 64, 14, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
 .banner-error {
-  background: #fef2f2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #9f1239;
+  border: 1px solid var(--border-interactive);
 }
 
 .btn-dismiss {
   background: transparent;
   border: none;
-  color: #991b1b;
+  color: inherit;
   font-weight: 600;
   cursor: pointer;
   text-decoration: underline;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  flex-shrink: 0;
 }
 
-/* Input & Status Dock */
+.btn-dismiss:focus-visible {
+  outline: 2px solid var(--kural-pink);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Input & Status Dock (Compact & Balanced)
+   -------------------------------------------------------------------------- */
 .chat-dock {
   background: var(--bg-header);
   border-top: 1px solid var(--border-subtle);
-  padding: 16px 24px;
+  padding: 12px 20px 14px;
 }
 
 .triage-status-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-  font-size: 12px;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 11.5px;
   color: var(--text-muted);
   flex-wrap: wrap;
 }
@@ -309,14 +422,15 @@
 
 .triage-label {
   font-weight: 500;
+  color: var(--text-body);
 }
 
 .distress-badge {
   font-size: 11px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 12px;
-  letter-spacing: 0.4px;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 9999px;
+  letter-spacing: 0.2px;
 }
 
 .distress-none {
@@ -326,9 +440,9 @@
 }
 
 .distress-low {
-  background: #f0f9ff;
-  color: #075985;
-  border: 1px solid #bae6fd;
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
 }
 
 .distress-medium {
@@ -338,25 +452,25 @@
 }
 
 .distress-high {
-  background: #fef2f2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
-  animation: pulseHighlight 2s infinite;
+  background: #fff1f2;
+  color: #9f1239;
+  border: 1px solid #fecdd3;
+  animation: pulseDistress 2.5s infinite;
 }
 
-@keyframes pulseHighlight {
+@keyframes pulseDistress {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.25);
   }
   50% {
-    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0);
+    box-shadow: 0 0 0 3px rgba(225, 29, 72, 0);
   }
 }
 
 .triage-explanation {
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--text-muted);
-  max-width: 400px;
+  max-width: 360px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -369,22 +483,24 @@
 
 .session-tag code {
   background: var(--pill-bg);
-  padding: 2px 4px;
+  color: var(--text-heading);
+  padding: 2px 5px;
   border-radius: 4px;
-  font-family: monospace;
+  border: 1px solid var(--border-subtle);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 
 .input-row {
   display: flex;
-  gap: 12px;
-  align-items: flex-end;
+  gap: 10px;
+  align-items: center;
 }
 
 .chat-textarea {
   flex: 1;
   padding: 12px 16px;
   border: 1px solid var(--border-interactive);
-  border-radius: 12px;
+  border-radius: 14px;
   font-family: inherit;
   font-size: 15px;
   line-height: 1.4;
@@ -393,24 +509,28 @@
   color: var(--text-heading);
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
+  min-height: 46px;
+  max-height: 120px;
+  box-sizing: border-box;
 }
 
 .chat-textarea:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  border-color: var(--kural-pink);
+  box-shadow: 0 0 0 3px rgba(217, 121, 156, 0.18);
 }
 
 .chat-textarea:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  background: var(--bg-body);
 }
 
 .btn-send {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  background: linear-gradient(135deg, var(--kural-pink) 0%, var(--kural-pink-dark) 100%);
   color: #ffffff;
   border: none;
-  padding: 12px 22px;
-  border-radius: 12px;
+  padding: 0 22px;
+  border-radius: 14px;
   font-weight: 600;
   font-size: 15px;
   cursor: pointer;
@@ -418,13 +538,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
-  transition: opacity 0.2s, transform 0.1s;
+  box-shadow: 0 2px 8px rgba(217, 121, 156, 0.3);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .btn-send:hover:not(:disabled) {
-  opacity: 0.95;
+  opacity: 0.96;
   transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(169, 78, 115, 0.35);
 }
 
 .btn-send:active:not(:disabled) {
@@ -432,36 +554,777 @@
 }
 
 .btn-send:disabled {
-  opacity: 0.5;
+  opacity: 0.55;
   cursor: not-allowed;
   box-shadow: none;
+  transform: none;
+}
+
+.btn-send:focus-visible {
+  outline: 2px solid var(--kural-pink-dark);
+  outline-offset: 2px;
 }
 
 .disclaimer-text {
-  margin: 10px 0 0 0;
+  margin: 8px 0 0 0;
   font-size: 11px;
   color: var(--text-muted);
   text-align: center;
+  line-height: 1.35;
 }
 
-/* Mobile Responsiveness */
-@media (max-width: 640px) {
-  .kural-header {
-    padding: 12px 16px;
+/* --------------------------------------------------------------------------
+   Accessibility & Reduced Motion
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .typing-indicator span {
+    animation: none;
+    opacity: 0.7;
   }
+  .distress-high {
+    animation: none;
+  }
+  .btn-send,
+  .btn-reset,
+  .starter-btn,
+  .chat-textarea {
+    transition: none;
+    transform: none !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Responsive Layout
+   -------------------------------------------------------------------------- */
+@media (max-width: 680px) {
+  .kural-header {
+    padding: 10px 14px;
+    gap: 10px;
+  }
+
   .header-subtitle {
     display: none;
   }
+
   .chat-viewport {
-    padding: 16px;
+    padding: 14px 12px;
   }
+
   .message-bubble {
-    max-width: 90%;
+    max-width: 88%;
+    padding: 12px 14px;
+    font-size: 15px;
   }
+
+  .starters-grid {
+    gap: 8px;
+  }
+
+  .starter-btn {
+    font-size: 12px;
+    padding: 6px 12px;
+    min-height: 34px;
+  }
+
   .chat-dock {
-    padding: 12px 16px;
+    padding: 10px 12px 12px;
   }
+
   .triage-explanation {
     display: none;
+  }
+
+  .btn-send {
+    padding: 0 16px;
+    height: 44px;
+    font-size: 14px;
+  }
+
+  .chat-textarea {
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 14.5px;
+  }
+}
+
+/* ==========================================================================
+   Kural — Visual Design Refinement (Stitch Visual System)
+   ========================================================================== */
+
+/* Navigation Link (Home) */
+.btn-nav-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-body);
+  background: var(--pill-bg);
+  border: 1px solid var(--border-interactive);
+  border-radius: 9999px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  min-height: 34px;
+}
+
+.btn-nav-home:hover {
+  background: var(--btn-hover-bg);
+  color: var(--kural-pink-dark);
+  border-color: var(--kural-pink);
+}
+
+/* Landing Page Shell */
+.landing-page-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-body);
+  color: var(--text-body);
+}
+
+/* Header & Brand */
+.landing-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg-header);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 14px 24px;
+}
+
+.landing-header-inner {
+  max-width: 1040px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.landing-brand-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  padding: 5px 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-interactive);
+  border-radius: 9999px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.landing-brand-link:hover {
+  border-color: var(--kural-pink);
+  box-shadow: 0 2px 8px rgba(200, 91, 126, 0.12);
+}
+
+.brand-tamil {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-heading);
+  letter-spacing: -0.2px;
+}
+
+.brand-capsule {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--kural-pink);
+  background: var(--pill-bg);
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.brand-dot {
+  color: var(--border-interactive);
+  font-size: 10px;
+}
+
+.brand-sub {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.landing-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-header-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--kural-pink);
+  background: var(--pill-bg);
+  border: 1px solid var(--border-interactive);
+  border-radius: 9999px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.btn-header-link:hover {
+  background: var(--btn-hover-bg);
+  border-color: var(--kural-pink);
+  color: var(--kural-pink-dark);
+}
+
+/* Landing Main Container */
+.landing-main {
+  flex: 1;
+  max-width: 980px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 48px 24px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+}
+
+/* Hero Section */
+.landing-hero {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.hero-eyebrow-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--kural-pink);
+  background: var(--pill-bg);
+  border: 1px solid var(--border-interactive);
+  padding: 5px 16px;
+  border-radius: 9999px;
+  box-shadow: 0 2px 8px rgba(200, 91, 126, 0.06);
+}
+
+.hero-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--kural-pink);
+  box-shadow: 0 0 0 2px var(--kural-pink-soft);
+  flex-shrink: 0;
+}
+
+.hero-display-title {
+  margin: 0;
+  font-size: 40px;
+  line-height: 1.18;
+  font-weight: 750;
+  color: var(--text-heading);
+  letter-spacing: -0.03em;
+}
+
+.hero-highlight {
+  color: var(--kural-pink);
+  display: block;
+  margin-top: 4px;
+}
+
+.hero-lead {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--text-body);
+  max-width: 680px;
+}
+
+/* Choice Sanctuary Section */
+.sanctuary-section {
+  width: 100%;
+}
+
+.sanctuary-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 26px;
+  align-items: stretch;
+}
+
+.sanctuary-card {
+  border-radius: 26px;
+  padding: 34px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+/* Primary Patient Card: Luminous Blush Tone */
+.patient-card-refined {
+  background: var(--bg-surface-soft);
+  border: 1.5px solid #f0ccd8;
+  box-shadow: 0 8px 28px rgba(200, 91, 126, 0.07);
+}
+
+.patient-card-refined:hover {
+  transform: translateY(-2px);
+  border-color: var(--kural-pink);
+  box-shadow: 0 12px 36px rgba(200, 91, 126, 0.13);
+}
+
+/* Secondary Caregiver Card: Warm Pure Surface */
+.caregiver-card-refined {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 6px 24px rgba(76, 59, 69, 0.04);
+}
+
+.caregiver-card-refined:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-interactive);
+  box-shadow: 0 10px 30px rgba(76, 59, 69, 0.08);
+}
+
+.card-top-pill {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 9999px;
+}
+
+.patient-pill-label {
+  background: #ffffff;
+  color: var(--kural-pink);
+  border: 1px solid #f0ccd8;
+}
+
+.caregiver-pill-label {
+  background: var(--pill-bg);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+}
+
+.pill-sparkle {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.sanctuary-card-title {
+  margin: 0;
+  font-size: 23px;
+  font-weight: 700;
+  color: var(--text-heading);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.sanctuary-card-desc {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--text-body);
+}
+
+.sanctuary-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.sanctuary-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(228, 191, 204, 0.5);
+  color: var(--text-body);
+}
+
+.sanctuary-cta-box {
+  margin-top: auto;
+  padding-top: 14px;
+}
+
+/* Full Pill Buttons */
+.btn-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 26px;
+  border-radius: 9999px;
+  font-size: 15px;
+  font-weight: 650;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.btn-primary-pill {
+  background: var(--kural-pink);
+  color: #ffffff;
+  border: 1.5px solid transparent;
+  box-shadow: 0 4px 16px rgba(200, 91, 126, 0.3);
+}
+
+.btn-primary-pill:hover {
+  background: var(--kural-pink-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(173, 70, 105, 0.38);
+}
+
+.btn-secondary-pill {
+  background: #ffffff;
+  color: var(--kural-pink);
+  border: 1.5px solid var(--border-interactive);
+  box-shadow: 0 2px 8px rgba(76, 59, 69, 0.04);
+}
+
+.btn-secondary-pill:hover {
+  background: var(--pill-bg);
+  border-color: var(--kural-pink);
+  color: var(--kural-pink-dark);
+  transform: translateY(-1px);
+}
+
+.arrow-icon {
+  font-size: 15px;
+  transition: transform 0.2s ease;
+}
+
+.btn-pill:hover .arrow-icon {
+  transform: translateX(3px);
+}
+
+/* The Three Foundations Section */
+.foundations-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.foundations-header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.section-eyebrow {
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--kural-pink);
+}
+
+.foundations-title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 750;
+  color: var(--text-heading);
+  letter-spacing: -0.02em;
+}
+
+.foundations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.foundation-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 22px;
+  padding: 26px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 4px 18px rgba(76, 59, 69, 0.03);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.foundation-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-interactive);
+}
+
+.foundation-num {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--kural-pink);
+  letter-spacing: 0.04em;
+}
+
+.foundation-heading {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.foundation-body {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-body);
+}
+
+/* Reassurance Heart Banner */
+.reassurance-banner {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 26px;
+  padding: 36px 28px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 6px 24px rgba(76, 59, 69, 0.04);
+}
+
+.heart-circle-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--pill-bg);
+  border: 1px solid var(--border-interactive);
+  color: var(--kural-pink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  margin-bottom: 2px;
+}
+
+.reassurance-heading {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 750;
+  color: var(--text-heading);
+}
+
+.reassurance-text {
+  margin: 0;
+  font-size: 14.5px;
+  color: var(--text-muted);
+}
+
+.reassurance-chips {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-body);
+}
+
+.chip-dot {
+  color: var(--border-interactive);
+}
+
+/* Caregiver Placeholder & Not Found */
+.placeholder-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.placeholder-card {
+  max-width: 660px;
+  width: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 26px;
+  padding: 38px 32px;
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(76, 59, 69, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.placeholder-icon-wrap {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: var(--pill-bg);
+  border: 1px solid var(--border-interactive);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+}
+
+.placeholder-title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 750;
+  color: var(--text-heading);
+  line-height: 1.25;
+}
+
+.placeholder-subtitle {
+  margin: 0;
+  font-size: 15.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.honest-notice-box {
+  background: var(--bg-surface-soft);
+  border: 1px solid #f0ccd8;
+  border-radius: 18px;
+  padding: 20px 24px;
+  text-align: left;
+  margin: 6px 0;
+}
+
+.notice-title {
+  margin: 0 0 10px 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--kural-pink-dark);
+}
+
+.honest-notice-box p {
+  margin: 0 0 10px 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-body);
+}
+
+.notice-list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-body);
+}
+
+.notice-list strong {
+  color: var(--text-heading);
+}
+
+.placeholder-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.placeholder-actions .btn-pill {
+  width: auto;
+  min-width: 190px;
+}
+
+/* Landing Footer */
+.landing-footer {
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-subtle);
+  padding: 28px 24px 36px;
+  text-align: center;
+}
+
+.landing-footer-inner {
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+.landing-footer .disclaimer-text {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  margin: 0 0 8px 0;
+}
+
+.copyright-text {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Mobile & Motion Media Queries */
+@media (max-width: 768px) {
+  .landing-header {
+    padding: 12px 16px;
+  }
+
+  .landing-main {
+    padding: 28px 16px 48px;
+    gap: 40px;
+  }
+
+  .hero-display-title {
+    font-size: 30px;
+  }
+
+  .hero-lead {
+    font-size: 15px;
+  }
+
+  .sanctuary-card {
+    padding: 26px 20px;
+  }
+
+  .placeholder-card {
+    padding: 26px 18px;
+  }
+
+  .placeholder-actions {
+    flex-direction: column;
+  }
+
+  .placeholder-actions .btn-pill {
+    width: 100%;
+  }
+
+  .reassurance-banner {
+    padding: 26px 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sanctuary-card,
+  .btn-pill,
+  .btn-nav-home,
+  .foundation-card,
+  .arrow-icon {
+    transition: none;
+    transform: none !important;
   }
 }
