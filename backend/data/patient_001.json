@@ -1,41 +1,30 @@
 {
   "patient_id": "patient_001",
-  "name": "Preethi D",
-  "preferred_name": "Preethu",
-  "other_nicknames": ["Preetz", "Maha", "Maida Maavu"],
+  "name": "Eleanor Vance",
+  "preferred_name": "Nell",
+  "other_nicknames": ["Nelly", "El"],
   "stage": "mid",
-  "profession": "Working professional (software engineer), mid-40s",
-  "places_lived": ["Mandaveli", "Mylapore", "Saveetha Engineering College hostel"],
-  "education": ["St. John's Senior Secondary School", "Saveetha Engineering College"],
+  "profession": "Botanist and high school biology teacher",
+  "places_lived": ["Maplewood Valley", "Oakhaven Grove", "Pinecrest Community"],
+  "education": ["Greenfield Academy", "Willowbrook College of Botany"],
   "relationships": [
-    { "name": "Priyamvadha", "relation": "mother", "status": "living", "notes": "" },
-    { "name": "Durga Prasad", "relation": "father", "status": "living", "notes": "" },
-    { "name": "Ramya D", "relation": "sister", "status": "living", "notes": "" },
-    { "name": "Saraswathi", "relation": "grandmother", "status": "living", "notes": "" },
-    { "name": "Bhanu", "relation": "grandparent", "status": "living", "notes": "" },
-    { "name": "Balu", "relation": "grandparent", "status": "living", "notes": "" },
-    { "name": "Nagarajan", "relation": "grandparent", "status": "deceased", "notes": "" },
-    { "name": "Shivani K", "relation": "best friend", "status": "living", "notes": "" },
-    { "name": "Trinethra S", "relation": "best friend", "status": "living", "notes": "" },
-    { "name": "Nivetha K M", "relation": "best friend", "status": "living", "notes": "" },
-    { "name": "Hari Priya M", "relation": "best friend", "status": "living", "notes": "" },
-    { "name": "Nandhini N", "relation": "best friend", "status": "living", "notes": "" },
-    { "name": "Vigneshwaran S", "relation": "best friend", "status": "living", "notes": "" },
-    { "name": "Naghul Varshan N", "relation": "best friend", "status": "living", "notes": "" },
-    { "name": "Shayaam A", "relation": "best friend", "status": "living", "notes": "" }
+    { "name": "Arthur Vance", "relation": "husband", "status": "deceased", "notes": "Loved tending the greenhouse and rose garden together" },
+    { "name": "Clara Vance", "relation": "daughter", "status": "living", "notes": "Visits on Sunday afternoons with tea" },
+    { "name": "Thomas Vance", "relation": "son", "status": "living", "notes": "Lives in neighboring town, calls on weekends" },
+    { "name": "Beatrice Bell", "relation": "childhood friend", "status": "living", "notes": "Fellow garden club member" }
   ],
   "significant_events": [
-    "Was Head Girl in school",
-    "Completed an internship at Presidio",
-    "Worked at JP Morgan"
+    "Won first place at the Regional Botanical Exhibition for rare ferns",
+    "Authored a community field guide on local wildflowers",
+    "Celebrated 30 years teaching high school science"
   ],
   "preferences": {
-    "likes": ["eating good food"],
-    "dislikes": ["hot places / hot weather"]
+    "likes": ["camellia flowers", "earl grey tea with honey", "listening to cello music", "warm afternoon sunshine"],
+    "dislikes": ["loud sudden noises", "crowded hallways", "cold drafty rooms"]
   },
   "cherished_memories": [
-    "A trip with her closest friends",
-    "Being named Head Girl in school (added — pairs naturally with the school milestone above)",
-    "Her first day at JP Morgan (added — pairs with the work history above)"
+    "Planting the community conservatory garden with Arthur",
+    "Walking through the springtime arboretum with Clara",
+    "Receiving the teacher of the year award from her students"
   ]
 }
