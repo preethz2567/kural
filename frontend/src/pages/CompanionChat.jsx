@@ -24,6 +24,10 @@ export default function CompanionChat() {
     return localStorage.getItem('kural_active_patient_id') || 'patient_001'
   })
 
+  const [langMode, setLangMode] = useState(() => {
+    return localStorage.getItem('kural_lang_mode') || 'en'
+  })
+
   const [sessionId, setSessionId] = useState(() => createSessionId(activePatientId))
   const [patientData, setPatientData] = useState(null)
   const [messages, setMessages] = useState([])
@@ -34,9 +38,17 @@ export default function CompanionChat() {
   const [latestDistress, setLatestDistress] = useState({ level: 'none', reason: 'Awaiting input' })
   const [isMockMode, setIsMockMode] = useState(false)
   const [showSafeZoneModal, setShowSafeZoneModal] = useState(false)
+  const [isPlayingFamilyVoice, setIsPlayingFamilyVoice] = useState(false)
 
   const messagesEndRef = useRef(null)
   const textareaRef = useRef(null)
+  const familyAudioRef = useRef(null)
+
+  const toggleLanguage = () => {
+    const next = langMode === 'en' ? 'ta' : 'en'
+    setLangMode(next)
+    localStorage.setItem('kural_lang_mode', next)
+  }
 
   useEffect(() => {
     const controller = new AbortController()
@@ -53,11 +65,19 @@ export default function CompanionChat() {
         const patient = await fetchPatient(activePatientId, { signal: controller.signal })
         setPatientData(patient)
         const preferred = patient.preferred_name || patient.name || 'Friend'
+
+        // If patient language specifies Tamil, and no manual toggle yet, switch to Tamil
+        const isTamil = langMode === 'ta' || (patient.language && patient.language.toLowerCase().includes('tamil'))
+
+        const welcomeText = isTamil
+          ? `வணக்கம், ${preferred}. உங்களோடு அமைதியாகப் பேசுவதில் மிக்க மகிழ்ச்சி. பொறுமையாகப் பேசுங்கள், நான் எப்போதும் உங்களுடன்தான் இருக்கிறேன்.`
+          : `Hello, ${preferred}. It is lovely to sit together today. Take your time, and tell me whatever is on your mind. I am right here with you.`
+
         setMessages([
           {
             id: 'welcome_' + Date.now(),
             sender: 'companion',
-            text: `Hello, ${preferred}. It is lovely to sit together today. Take your time, and tell me whatever is on your mind. I am right here with you.`,
+            text: welcomeText,
             timestamp: new Date().toISOString(),
             isMock: false,
           },
@@ -67,7 +87,9 @@ export default function CompanionChat() {
           {
             id: 'welcome_fallback',
             sender: 'companion',
-            text: 'Hello. It is wonderful to sit together today. Take your time, and tell me whatever is on your mind.',
+            text: langMode === 'ta'
+              ? 'வணக்கம். உங்களோடு பேசுவதில் மகிழ்ச்சி. பொறுமையாகப் பேசுங்கள்.'
+              : 'Hello. It is wonderful to sit together today. Take your time, and tell me whatever is on your mind.',
             timestamp: new Date().toISOString(),
             isMock: false,
           },
@@ -77,7 +99,7 @@ export default function CompanionChat() {
 
     init()
     return () => controller.abort()
-  }, [activePatientId])
+  }, [activePatientId, langMode])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -233,6 +255,41 @@ export default function CompanionChat() {
   const [isSpeaking, setIsSpeaking] = useState(false)
   const recognitionRef = useRef(null)
 
+  const handlePlayFamilyGreeting = () => {
+    const savedAudio = localStorage.getItem(`kural_greeting_audio_${activePatientId}`)
+    if (savedAudio) {
+      if (familyAudioRef.current) {
+        familyAudioRef.current.pause()
+        familyAudioRef.current.currentTime = 0
+      }
+      const audio = new Audio(savedAudio)
+      familyAudioRef.current = audio
+      setIsPlayingFamilyVoice(true)
+      audio.onended = () => setIsPlayingFamilyVoice(false)
+      audio.onerror = () => setIsPlayingFamilyVoice(false)
+      audio.play().catch(() => setIsPlayingFamilyVoice(false))
+    } else {
+      if (!('speechSynthesis' in window)) return
+      speechSynthesis.cancel()
+      const text = langMode === 'ta' || activePatientId === 'patient_kalyani'
+        ? `வணக்கம் அம்மா, ${caregiverName} பேசுறேன். இன்னைக்கு நல்லா ஓய்வெடுங்க, உங்க கூடவே இருக்கேன்.`
+        : `Hello ${preferredName}, it's ${caregiverName}. I'm thinking of you and sending you all my love today. Everything is safe and peaceful.`
+      const utterance = new SpeechSynthesisUtterance(text)
+      utterance.rate = 0.82
+      utterance.pitch = 1.05
+      if (langMode === 'ta' || activePatientId === 'patient_kalyani') {
+        utterance.lang = 'ta-IN'
+        const voices = speechSynthesis.getVoices()
+        const taVoice = voices.find((v) => v.lang.startsWith('ta'))
+        if (taVoice) utterance.voice = taVoice
+      }
+      utterance.onstart = () => setIsPlayingFamilyVoice(true)
+      utterance.onend = () => setIsPlayingFamilyVoice(false)
+      utterance.onerror = () => setIsPlayingFamilyVoice(false)
+      speechSynthesis.speak(utterance)
+    }
+  }
+
   const speakReply = (textToSpeak) => {
     if (!('speechSynthesis' in window)) return
     speechSynthesis.cancel()
@@ -246,12 +303,19 @@ export default function CompanionChat() {
     utterance.pitch = preset.pitch
 
     const voices = speechSynthesis.getVoices()
-    const gentleVoice = voices.find(
-      (v) =>
-        v.lang.startsWith('en') &&
-        (v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Google') || v.name.includes('Female'))
-    )
-    if (gentleVoice) utterance.voice = gentleVoice
+    if (langMode === 'ta') {
+      utterance.lang = 'ta-IN'
+      const taVoice = voices.find((v) => v.lang.startsWith('ta'))
+      if (taVoice) utterance.voice = taVoice
+    } else {
+      utterance.lang = 'en-US'
+      const gentleVoice = voices.find(
+        (v) =>
+          v.lang.startsWith('en') &&
+          (v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Google') || v.name.includes('Female'))
+      )
+      if (gentleVoice) utterance.voice = gentleVoice
+    }
 
     utterance.onstart = () => setIsSpeaking(true)
     utterance.onend = () => setIsSpeaking(false)
@@ -276,7 +340,7 @@ export default function CompanionChat() {
       const recognition = new SpeechRecognition()
       recognition.continuous = false
       recognition.interimResults = false
-      recognition.lang = 'en-US'
+      recognition.lang = langMode === 'ta' ? 'ta-IN' : 'en-US'
 
       recognition.onstart = () => setIsListening(true)
       recognition.onresult = (event) => {
@@ -308,14 +372,23 @@ export default function CompanionChat() {
             <span className="brand-kural">KURAL</span>
           </div>
           <span className="header-divider-v">|</span>
-          <span className="chat-header-sub">Companion Session</span>
+          <span className="chat-header-sub">{langMode === 'ta' ? 'குரல் துணை' : 'Companion Session'}</span>
         </div>
 
         <div className="chat-header-person">
+          <button
+            type="button"
+            className={`btn-lang-toggle ${langMode === 'ta' ? 'lang-ta-active' : ''}`}
+            onClick={toggleLanguage}
+            title="Switch conversation language between English and தமிழ்"
+          >
+            {langMode === 'ta' ? '🇮🇳 தமிழ்' : '🇬🇧 EN'}
+          </button>
+
           <div className="person-header-info">
             <span className="person-header-name">{preferredName}</span>
             <span className="person-header-status">
-              <span className="status-dot-green"></span> Active
+              <span className="status-dot-green"></span> {langMode === 'ta' ? 'இணைப்பு' : 'Active'}
             </span>
           </div>
           <button
@@ -341,7 +414,9 @@ export default function CompanionChat() {
           <div className="intergenerational-left">
             <span className="heart-circle-dark">♥</span>
             <div>
-              <div className="intergenerational-eyebrow">LINKED COMPANION SESSION</div>
+              <div className="intergenerational-eyebrow">
+                {langMode === 'ta' ? 'குடும்பத் துணை இணைப்பு' : 'LINKED COMPANION SESSION'}
+              </div>
               <div className="intergenerational-names">
                 {caregiverName} &amp; {preferredName}
               </div>
@@ -352,7 +427,7 @@ export default function CompanionChat() {
             className="btn-status-pill"
             onClick={() => navigate('/profiles')}
           >
-            ● Switch Person
+            ● {langMode === 'ta' ? 'நபரை மாற்று' : 'Switch Person'}
           </button>
         </div>
 
@@ -367,9 +442,10 @@ export default function CompanionChat() {
           >
             <span className="safe-zone-icon">📍</span>
             <span className="safe-zone-label">
-              <strong>Safe Zone:</strong> {patientData?.places_lived?.[0] || 'Home (Safe)'}
+              <strong>{langMode === 'ta' ? 'பாதுகாப்பான பகுதி:' : 'Safe Zone:'}</strong>{' '}
+              {patientData?.places_lived?.[0] || 'Home (Safe)'}
             </span>
-            <span className="safe-zone-badge">Normal ↗</span>
+            <span className="safe-zone-badge">{langMode === 'ta' ? 'இயல்பு ↗' : 'Normal ↗'}</span>
           </div>
 
           <div className="cadence-mini-bar">
@@ -379,6 +455,34 @@ export default function CompanionChat() {
             </span>
             <Link to="/caregiver" className="cadence-mini-tune" title="Adjust voice cadence in Caregiver Workspace">⚙</Link>
           </div>
+        </div>
+
+        {/* Familiar Caregiver Voice Greeting Player */}
+        <div className="family-voice-banner">
+          <div className="family-voice-left">
+            <div className="family-voice-icon-circle">
+              <span className="family-voice-icon">🎙️</span>
+            </div>
+            <div>
+              <span className="family-voice-eyebrow">
+                {langMode === 'ta' ? 'அன்பான குடும்பக் குரல்' : 'FAMILIAR FAMILY VOICE'}
+              </span>
+              <span className="family-voice-title">
+                {caregiverName}&apos;s {langMode === 'ta' ? 'அன்பு வாழ்த்து' : 'Personal Greeting'}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            className={`btn-play-family-greeting ${isPlayingFamilyVoice ? 'greeting-playing' : ''}`}
+            onClick={handlePlayFamilyGreeting}
+          >
+            {isPlayingFamilyVoice ? (
+              <span className="playing-waveform">❙❙❙ {langMode === 'ta' ? 'ஒலிக்கிறது...' : 'Playing...'}</span>
+            ) : (
+              <span>▶ {langMode === 'ta' ? 'வாழ்த்தைக் கேள்' : 'Play Greeting'}</span>
+            )}
+          </button>
         </div>
       </div>
 
@@ -596,7 +700,11 @@ export default function CompanionChat() {
           <textarea
             ref={textareaRef}
             className="dock-textarea"
-            placeholder={isListening ? 'Listening to your voice...' : `Type or speak to ${preferredName}...`}
+            placeholder={
+              isListening
+                ? (langMode === 'ta' ? 'உங்கள் குரலைக் கேட்கிறது...' : 'Listening to your voice...')
+                : (langMode === 'ta' ? `${preferredName}-உடன் தமிழில் பேசுங்கள்...` : `Type or speak to ${preferredName}...`)
+            }
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -610,7 +718,7 @@ export default function CompanionChat() {
             disabled={!inputText.trim() || isLoading}
             aria-label="Send"
           >
-            {isLoading ? '...' : 'Send'}
+            {isLoading ? '...' : (langMode === 'ta' ? 'அனுப்பு' : 'Send')}
           </button>
         </form>
       </footer>

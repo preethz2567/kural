@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { listPatients } from '../api.js'
 import '../App.css'
@@ -46,6 +46,19 @@ export default function CaregiverPortal() {
     return localStorage.getItem('kural_voice_cadence') || 'maternal'
   })
   const [previewingId, setPreviewingId] = useState(null)
+
+  // Familiar Caregiver Voice Recording
+  const [isRecording, setIsRecording] = useState(false)
+  const [recordingSeconds, setRecordingSeconds] = useState(0)
+  const [recordedAudioUrl, setRecordedAudioUrl] = useState(() => {
+    const id = localStorage.getItem('kural_active_patient_id') || 'patient_001'
+    return localStorage.getItem(`kural_greeting_audio_${id}`) || null
+  })
+  const [isPlayingGreeting, setIsPlayingGreeting] = useState(false)
+  const mediaRecorderRef = useRef(null)
+  const audioChunksRef = useRef([])
+  const timerRef = useRef(null)
+  const audioPlayerRef = useRef(null)
 
   const [newNote, setNewNote] = useState('')
   const [copiedToast, setCopiedToast] = useState(false)
@@ -147,6 +160,96 @@ Generated with love by Kural Dementia Companion Care.
     utterance.onend = () => setPreviewingId(null)
     utterance.onerror = () => setPreviewingId(null)
     speechSynthesis.speak(utterance)
+  }
+
+  // Audio greeting recorder logic
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      audioChunksRef.current = []
+      const recorder = new MediaRecorder(stream)
+      mediaRecorderRef.current = recorder
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          audioChunksRef.current.push(e.data)
+        }
+      }
+
+      recorder.onstop = () => {
+        stream.getTracks().forEach((track) => track.stop())
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          const base64data = reader.result
+          const id = activePatient?.patient_id || 'patient_001'
+          localStorage.setItem(`kural_greeting_audio_${id}`, base64data)
+          setRecordedAudioUrl(base64data)
+        }
+        reader.readAsDataURL(audioBlob)
+      }
+
+      recorder.start()
+      setIsRecording(true)
+      setRecordingSeconds(0)
+
+      timerRef.current = setInterval(() => {
+        setRecordingSeconds((prev) => {
+          if (prev >= 10) {
+            stopRecording()
+            return 10
+          }
+          return prev + 1
+        })
+      }, 1000)
+    } catch {
+      alert('Microphone access is required to record a caregiver voice greeting.')
+    }
+  }
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop()
+    }
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+    }
+    setIsRecording(false)
+  }
+
+  const handlePlayRecordedGreeting = () => {
+    if (recordedAudioUrl) {
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause()
+        audioPlayerRef.current.currentTime = 0
+      }
+      const audio = new Audio(recordedAudioUrl)
+      audioPlayerRef.current = audio
+      setIsPlayingGreeting(true)
+      audio.onended = () => setIsPlayingGreeting(false)
+      audio.onerror = () => setIsPlayingGreeting(false)
+      audio.play().catch(() => setIsPlayingGreeting(false))
+    } else {
+      // Synthetic family greeting fallback
+      if (!('speechSynthesis' in window)) return
+      speechSynthesis.cancel()
+      const text = activePatient?.patient_id === 'patient_kalyani'
+        ? `வணக்கம் அம்மா, ${caregiverName} பேசுறேன். இன்னைக்கு நல்லா ஓய்வெடுங்க, உங்க கூடவே இருக்கேன்.`
+        : `Hello ${preferredName}, it's ${caregiverName}. I'm thinking of you and sending you all my love today. Everything is safe and peaceful.`
+      const utterance = new SpeechSynthesisUtterance(text)
+      utterance.rate = 0.82
+      utterance.pitch = 1.05
+      utterance.onstart = () => setIsPlayingGreeting(true)
+      utterance.onend = () => setIsPlayingGreeting(false)
+      utterance.onerror = () => setIsPlayingGreeting(false)
+      speechSynthesis.speak(utterance)
+    }
+  }
+
+  const handleDeleteGreeting = () => {
+    const id = activePatient?.patient_id || 'patient_001'
+    localStorage.removeItem(`kural_greeting_audio_${id}`)
+    setRecordedAudioUrl(null)
   }
 
   const handleMagicLink = (e) => {
@@ -308,6 +411,82 @@ Generated with love by Kural Dementia Companion Care.
                   </div>
                 )
               })}
+            </div>
+          </div>
+
+          {/* Familiar Caregiver Voice Greeting */}
+          <div className="workspace-section-block">
+            <div className="workspace-section-header">
+              <span className="anchors-eyebrow">FAMILIAR VOICE GREETING</span>
+              <span className="cadence-active-pill">
+                {recordedAudioUrl ? '● Custom Voice Linked' : '● Ready to Record'}
+              </span>
+            </div>
+            <p className="workspace-section-sub">
+              Record a 10-second personal greeting in your own voice. Hearing {caregiverName}&apos;s familiar voice provides instant grounding and reassurance for {preferredName}.
+            </p>
+
+            <div className="voice-recorder-card">
+              <div className="voice-recorder-status">
+                <div className={`recorder-mic-circle ${isRecording ? 'recording-pulse' : ''}`}>
+                  {isRecording ? '🔴' : '🎙️'}
+                </div>
+                <div className="recorder-info">
+                  <h4 className="recorder-title">
+                    {isRecording
+                      ? 'Recording Family Greeting...'
+                      : recordedAudioUrl
+                      ? 'Custom Family Voice Note Saved'
+                      : 'Record 10s Reassurance Greeting'}
+                  </h4>
+                  <span className="recorder-timer">
+                    {isRecording
+                      ? `00:0${recordingSeconds} / 00:10 (Speak warmly)`
+                      : recordedAudioUrl
+                      ? 'Plays at start of companion session'
+                      : 'Tap Record to speak in your voice'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="recorder-actions-row">
+                {!isRecording ? (
+                  <button
+                    type="button"
+                    className="btn-stitch-primary btn-record-action"
+                    onClick={startRecording}
+                  >
+                    🎙️ {recordedAudioUrl ? 'Re-Record' : 'Record Greeting'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn-stitch-primary btn-stop-action"
+                    onClick={stopRecording}
+                  >
+                    ⏹ Stop &amp; Save
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className={`btn-stitch-secondary btn-play-sample ${isPlayingGreeting ? 'preview-playing' : ''}`}
+                  onClick={handlePlayRecordedGreeting}
+                >
+                  {isPlayingGreeting ? '🔊 Playing Greeting...' : '▶ Listen'}
+                </button>
+
+                {recordedAudioUrl && !isRecording && (
+                  <button
+                    type="button"
+                    className="btn-delete-audio"
+                    onClick={handleDeleteGreeting}
+                    title="Remove custom audio recording"
+                  >
+                    🗑️ Reset
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 

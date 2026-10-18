@@ -2308,3 +2308,216 @@
   cursor: not-allowed;
 }
 
+/* Language Toggle Button in Header */
+.btn-lang-toggle {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 9999px;
+  color: var(--text-body);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-lang-toggle:hover {
+  background: var(--kural-pink-soft);
+  color: var(--kural-pink);
+  border-color: var(--border-interactive);
+}
+
+.lang-ta-active {
+  border-color: var(--kural-pink);
+  background: rgba(242, 166, 191, 0.15);
+  color: var(--kural-pink);
+}
+
+/* Familiar Family Voice Greeting Banner in Companion Chat */
+.family-voice-banner {
+  background: linear-gradient(135deg, rgba(242, 166, 191, 0.14) 0%, rgba(36, 33, 41, 0.9) 100%);
+  border: 1px solid var(--border-interactive);
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.family-voice-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.family-voice-icon-circle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--kural-pink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.family-voice-eyebrow {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 800;
+  color: var(--kural-pink);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.family-voice-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.btn-play-family-greeting {
+  background: #ffffff;
+  color: #111013;
+  border: none;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 6px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.btn-play-family-greeting:hover {
+  background: var(--kural-pink);
+  transform: translateY(-1px);
+}
+
+.greeting-playing {
+  background: #10b981 !important;
+  color: #ffffff !important;
+}
+
+.playing-waveform {
+  animation: pulseWave 1s infinite alternate;
+}
+
+@keyframes pulseWave {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Caregiver Workspace Voice Recorder Card */
+.voice-recorder-card {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.voice-recorder-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.recorder-mic-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.recording-pulse {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+  animation: recPulse 1s infinite alternate;
+}
+
+@keyframes recPulse {
+  from {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  to {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+}
+
+.recorder-info {
+  flex: 1;
+}
+
+.recorder-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.recorder-timer {
+  font-size: 11.5px;
+  color: var(--kural-pink);
+}
+
+.recorder-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-record-action {
+  font-size: 12px;
+  padding: 8px 14px;
+}
+
+.btn-stop-action {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  font-size: 12px;
+  padding: 8px 14px;
+}
+
+.btn-play-sample {
+  font-size: 12px;
+  padding: 8px 14px;
+}
+
+.btn-delete-audio {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 9999px;
+  color: var(--text-muted);
+  font-size: 11px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-delete-audio:hover {
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+
