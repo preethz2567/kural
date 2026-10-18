@@ -18,6 +18,7 @@ class VoiceSynthesizeRequest(BaseModel):
     patient_id: str
     text: str
     language: Optional[str] = None
+    audio_sample: Optional[str] = None
 
 @router.get("/{patient_id}")
 async def get_patient_voice_profile(patient_id: str):
@@ -73,6 +74,7 @@ async def synthesize_speech_endpoint(request: VoiceSynthesizeRequest):
     result = await voice_service.synthesize_speech(
         patient_id=request.patient_id,
         text=request.text,
-        language=request.language
+        language=request.language,
+        audio_sample=request.audio_sample,
     )
     return result

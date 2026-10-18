@@ -160,7 +160,8 @@ async def clone_caregiver_voice(
 async def synthesize_speech(
     patient_id: str,
     text: str,
-    language: Optional[str] = None
+    language: Optional[str] = None,
+    audio_sample: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Synthesize companion speech speaking the response in the patient's active cloned caregiver voice.
@@ -213,12 +214,12 @@ async def synthesize_speech(
             print(f"[Voice Service] LinuxONE synthesis failed or timed out: {e}. Falling back to neural synthesis.")
 
     # 2. Check if caregiver's authentic enrolled voice sample matches the greeting/test phrase
-    audio_sample = profile.get("audio_sample")
+    sample = audio_sample or profile.get("audio_sample")
     clean_req = clean_text_for_speech(text).lower()
     is_greeting = any(w in clean_req for w in ["வணக்கம்", "hello", "good morning", "காலை வணக்கம்", "அம்மா", "appa", "amma"])
-    if audio_sample and is_greeting:
+    if sample and is_greeting:
         return {
-            "audio_base64": audio_sample,
+            "audio_base64": sample,
             "audio_mime": "audio/webm",
             "content_type": "audio/webm",
             "voice_cloned": True,

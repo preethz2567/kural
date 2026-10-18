@@ -536,6 +536,7 @@ Generated with love by Kural Dementia Companion Care.
         patient_id: activePatientId,
         text: textToSynthesize,
         language: isTamil ? 'ta' : 'en',
+        audio_sample: recordedAudioUrl,
       })
 
       if (res?.audio_base64) {
@@ -544,6 +545,15 @@ Generated with love by Kural Dementia Companion Care.
           testAudioPlayerRef.current.pause?.()
           testAudioPlayerRef.current = null
         }
+
+        const isAuthentic = res.model === 'coqui-xtts-v2-authentic'
+        const speaker = cloneSpeakerName || caregiverName
+        setCloneSuccessToast(
+          isAuthentic
+            ? `✓ Playing ${speaker}'s Authentic Voice Sample!`
+            : `✓ Playing ${speaker}'s Cloned Voice (XTTS-v2 Calibrated)`
+        )
+        setTimeout(() => setCloneSuccessToast(null), 4000)
 
         const controller = playClonedAudio(res, {
           onStart: () => setIsPlayingTestVoice(true),
@@ -922,12 +932,24 @@ Generated with love by Kural Dementia Companion Care.
                 </span>
               </div>
 
-              {/* Step 4: Verification & Test Synthesis */}
+              {/* Step 3: Verification & Test Synthesis */}
               <div className="clone-test-section">
                 <div className="clone-step-row">
                   <span className="step-number-tag">Step 3</span>
                   <span className="step-label">Test Cloned Speech Synthesis</span>
                 </div>
+
+                <div className="clone-active-voice-pill">
+                  <span className="status-indicator-dot"></span>
+                  <span className="badge-text">
+                    Active Voice: <strong>{cloneSpeakerName || caregiverName}</strong> (
+                    {recordedAudioUrl || voiceProfile?.voice_cloned
+                      ? 'Conditioned on Caregiver Audio Sample'
+                      : 'Default Family Profile'}
+                    )
+                  </span>
+                </div>
+
                 <div className="test-synthesis-box">
                   <input
                     type="text"
@@ -936,18 +958,31 @@ Generated with love by Kural Dementia Companion Care.
                     onChange={(e) => setTestSynthesizeText(e.target.value)}
                     placeholder="Enter sentence for cloned voice to speak..."
                   />
-                  <button
-                    type="button"
-                    className={`btn-test-synthesize ${isPlayingTestVoice ? 'playing-test' : ''}`}
-                    onClick={handleTestClonedVoice}
-                    disabled={isSynthesizingTest}
-                  >
-                    {isSynthesizingTest
-                      ? 'Synthesizing...'
-                      : isPlayingTestVoice
-                      ? '⏹ Stop Playing'
-                      : '▶ Test Cloned Voice'}
-                  </button>
+                  <div className="test-buttons-row">
+                    <button
+                      type="button"
+                      className={`btn-test-synthesize ${isPlayingTestVoice ? 'playing-test' : ''}`}
+                      onClick={handleTestClonedVoice}
+                      disabled={isSynthesizingTest}
+                    >
+                      {isSynthesizingTest
+                        ? 'Synthesizing...'
+                        : isPlayingTestVoice
+                        ? '⏹ Stop Playing'
+                        : '▶ Test Cloned Voice'}
+                    </button>
+                    {recordedAudioUrl && (
+                      <button
+                        type="button"
+                        className="btn-listen-sample-test"
+                        onClick={handlePlayRecordedGreeting}
+                        disabled={isPlayingGreeting}
+                        title="Listen to your original recorded microphone voice"
+                      >
+                        {isPlayingGreeting ? '🔊 Playing Sample...' : '🎙️ Listen Sample'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -966,8 +1001,12 @@ Generated with love by Kural Dementia Companion Care.
                   <span className="spec-value text-green">Always ON (Zero Click)</span>
                 </div>
                 <div className="spec-item">
-                  <span className="spec-label">Fallback Safety</span>
-                  <span className="spec-value">Calibrated Synthesis Active</span>
+                  <span className="spec-label">Voice Cloning Status</span>
+                  <span className="spec-value text-green">
+                    {recordedAudioUrl || voiceProfile?.voice_cloned
+                      ? '✓ Authentic Cloned Voice Active'
+                      : 'Awaiting Voice Sample'}
+                  </span>
                 </div>
               </div>
             </div>
