@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { checkBackendHealth, fetchPatient, sendChatMessage } from '../api.js'
 import '../App.css'
 
 function createSessionId() {
@@ -22,6 +23,8 @@ const CONVERSATION_STARTERS = [
   { label: '🎶 Gentle Music', prompt: 'What is a calming memory or song we can think about?' },
 ]
 
+const PATIENT_ID = 'patient_001'
+
 export default function CompanionChat() {
   const [sessionId, setSessionId] = useState(createSessionId)
   const [messages, setMessages] = useState([
@@ -36,7 +39,8 @@ export default function CompanionChat() {
   const [inputText, setInputText] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [backendOnline, setBackendOnline] = useState(null)
+  // null = checking, true = online, false = offline, 'retrying' = waking up (Render cold-start)
+  const [backendStatus, setBackendStatus] = useState(null)
   const [patientContext, setPatientContext] = useState('Nell · Mid Stage')
   const [latestDistress, setLatestDistress] = useState({ level: 'none', reason: 'Awaiting user input' })
   const [isMockMode, setIsMockMode] = useState(true)
@@ -45,27 +49,48 @@ export default function CompanionChat() {
   const textareaRef = useRef(null)
 
   useEffect(() => {
-    // Check backend health and load non-sensitive patient header context
-    fetch('/ping')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.status === 'ok') setBackendOnline(true)
-      })
-      .catch(() => setBackendOnline(false))
+    const controller = new AbortController()
+    let retryTimer = null
 
-    fetch('/patient/patient_001')
-      .then((res) => {
-        if (!res.ok) throw new Error('Patient record unavailable')
-        return res.json()
-      })
-      .then((patient) => {
+    async function init() {
+      // 1. Health check
+      try {
+        const result = await checkBackendHealth({ signal: controller.signal })
+        if (result.online) {
+          setBackendStatus(true)
+        } else if (result.retrying) {
+          // Render cold-start — show warming-up banner and retry once after 8 s
+          setBackendStatus('retrying')
+          retryTimer = setTimeout(async () => {
+            if (controller.signal.aborted) return
+            const retry = await checkBackendHealth({ signal: controller.signal }).catch(() => ({ online: false, retrying: false }))
+            if (!controller.signal.aborted) setBackendStatus(retry.online ? true : false)
+          }, 8000)
+        } else {
+          setBackendStatus(false)
+        }
+      } catch {
+        if (!controller.signal.aborted) setBackendStatus(false)
+      }
+
+      // 2. Patient context (non-blocking; does not affect backendStatus)
+      try {
+        const patient = await fetchPatient(PATIENT_ID, { signal: controller.signal })
         const preferred = patient.preferred_name || patient.name || 'Nell'
-        const stage = patient.stage ? `${patient.stage.charAt(0).toUpperCase() + patient.stage.slice(1)} Stage` : 'Stage Adaptive'
+        const stage = patient.stage
+          ? `${patient.stage.charAt(0).toUpperCase() + patient.stage.slice(1)} Stage`
+          : 'Stage Adaptive'
         setPatientContext(`${preferred} · ${stage}`)
-      })
-      .catch(() => {
+      } catch {
         setPatientContext('Nell · Mid Stage')
-      })
+      }
+    }
+
+    init()
+    return () => {
+      controller.abort()
+      if (retryTimer) clearTimeout(retryTimer)
+    }
   }, [])
 
   useEffect(() => {
@@ -92,23 +117,11 @@ export default function CompanionChat() {
     setError(null)
 
     try {
-      const response = await fetch('/chat/patient_001', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          session_id: sessionId,
-          message: trimmed,
-        }),
+      const data = await sendChatMessage(PATIENT_ID, {
+        session_id: sessionId,
+        message: trimmed,
       })
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.detail || `Server returned status ${response.status}`)
-      }
-
-      const data = await response.json()
       const replyText = data.response || 'No response returned.'
       const isMock = replyText.includes('[Mock Companion]') || replyText.includes('[Mocked')
 
@@ -200,9 +213,15 @@ export default function CompanionChat() {
 
       {/* Main Chat Area */}
       <main className="chat-viewport">
-        {backendOnline === false && (
+        {/* Backend status banners */}
+        {backendStatus === 'retrying' && (
           <div className="banner banner-warning">
-            Backend is currently unreachable at <code>http://127.0.0.1:8000</code>. Please start the backend service.
+            The companion service is waking up — this may take a moment on first visit. Your message will send once it is ready.
+          </div>
+        )}
+        {backendStatus === false && (
+          <div className="banner banner-warning">
+            Companion service is currently unreachable. Responses will use the offline prototype mode until the service reconnects.
           </div>
         )}
 

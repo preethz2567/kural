@@ -11,14 +11,15 @@ export default defineConfig({
         enabled: true
       },
       manifest: {
-        name: 'Kural App',
+        name: 'Kural — Voice-First AI Companion',
         short_name: 'Kural',
-        description: 'Kural full-stack application',
-        theme_color: '#ffffff',
+        description: 'A voice-first, stage-adaptive companion for older adults, providing a familiar and reassuring presence.',
+        theme_color: '#faf5f0',
+        background_color: '#faf5f0',
         icons: [
           {
-            src: '/vite.svg',
-            sizes: '192x192',
+            src: '/favicon.svg',
+            sizes: '64x64 192x192 512x512',
             type: 'image/svg+xml'
           }
         ]

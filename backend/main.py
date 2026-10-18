@@ -13,12 +13,13 @@ from routers import patient, chat
 
 app = FastAPI(title="Kural API")
 
-# Narrowly scoped development CORS for local Vite development
+# Narrowly scoped CORS for local Vite development and the deployed Vercel frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "https://kural-pi.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
