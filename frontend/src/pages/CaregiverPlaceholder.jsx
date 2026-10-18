@@ -3,12 +3,49 @@ import { Link, useNavigate } from 'react-router-dom'
 import { listPatients } from '../api.js'
 import '../App.css'
 
+export const CADENCE_PRESETS = {
+  maternal: {
+    id: 'maternal',
+    title: 'Gentle Maternal',
+    subtitle: 'Warm & Unhurried',
+    badge: 'Standard Maternal',
+    rate: 0.82,
+    pitch: 1.05,
+    description: 'Slow, soothing maternal warmth with comforting reassurances.',
+    icon: '🌸',
+  },
+  slow: {
+    id: 'slow',
+    title: 'Slow & Deliberate',
+    subtitle: 'High Articulation',
+    badge: 'Late Stage Focus',
+    rate: 0.72,
+    pitch: 1.00,
+    description: 'Crystal-clear articulation with relaxed spacing for sensory processing.',
+    icon: '🕊️',
+  },
+  story: {
+    id: 'story',
+    title: 'Comforting Storyteller',
+    subtitle: 'Melodic & Engaging',
+    badge: 'Reminiscence Flow',
+    rate: 0.88,
+    pitch: 0.96,
+    description: 'Warm conversational melody, wonderful for recalling beloved family stories.',
+    icon: '📖',
+  },
+}
+
 export default function CaregiverPortal() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('insights') // 'insights' | 'access'
   const [email, setEmail] = useState('')
   const [isSent, setIsSent] = useState(false)
   const [activePatient, setActivePatient] = useState(null)
+  const [selectedCadence, setSelectedCadence] = useState(() => {
+    return localStorage.getItem('kural_voice_cadence') || 'maternal'
+  })
+  const [previewingId, setPreviewingId] = useState(null)
 
   useEffect(() => {
     listPatients()
@@ -21,6 +58,35 @@ export default function CaregiverPortal() {
       })
       .catch(() => {})
   }, [])
+
+  const handleSelectCadence = (cadenceKey) => {
+    setSelectedCadence(cadenceKey)
+    localStorage.setItem('kural_voice_cadence', cadenceKey)
+  }
+
+  const handlePreviewCadence = (cadenceKey) => {
+    if (!('speechSynthesis' in window)) return
+    speechSynthesis.cancel()
+    const preset = CADENCE_PRESETS[cadenceKey] || CADENCE_PRESETS.maternal
+    const sample = `Hello, take all the time you need. I am right here with you.`
+    const utterance = new SpeechSynthesisUtterance(sample)
+    utterance.rate = preset.rate
+    utterance.pitch = preset.pitch
+
+    const voices = speechSynthesis.getVoices()
+    const gentleVoice = voices.find(
+      (v) =>
+        v.lang.startsWith('en') &&
+        (v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Google') || v.name.includes('Female'))
+    )
+    if (gentleVoice) utterance.voice = gentleVoice
+
+    setPreviewingId(cadenceKey)
+    utterance.onstart = () => setPreviewingId(cadenceKey)
+    utterance.onend = () => setPreviewingId(null)
+    utterance.onerror = () => setPreviewingId(null)
+    speechSynthesis.speak(utterance)
+  }
 
   const handleMagicLink = (e) => {
     e.preventDefault()
@@ -113,11 +179,87 @@ export default function CaregiverPortal() {
             </p>
           </div>
 
+          {/* Companion Voice & Cadence Presets */}
+          <div className="workspace-section-block">
+            <div className="workspace-section-header">
+              <span className="anchors-eyebrow">COMPANION VOICE &amp; CADENCE</span>
+              <span className="cadence-active-pill">
+                ● Active: {CADENCE_PRESETS[selectedCadence]?.title || 'Gentle Maternal'}
+              </span>
+            </div>
+            <p className="workspace-section-sub">
+              Adjust speech speed and maternal pitch for {preferredName}&apos;s stage and sensory comfort.
+            </p>
+
+            <div className="cadence-cards-grid">
+              {Object.values(CADENCE_PRESETS).map((preset) => {
+                const isSelected = selectedCadence === preset.id
+                const isPlaying = previewingId === preset.id
+                return (
+                  <div
+                    key={preset.id}
+                    className={`cadence-preset-card ${isSelected ? 'cadence-preset-card-selected' : ''}`}
+                    onClick={() => handleSelectCadence(preset.id)}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="cadence-preset-top">
+                      <div className="cadence-preset-icon-wrap">
+                        <span className="cadence-preset-icon">{preset.icon}</span>
+                      </div>
+                      <div className="cadence-preset-meta">
+                        <div className="cadence-preset-title-row">
+                          <h4 className="cadence-preset-title">{preset.title}</h4>
+                          {isSelected && <span className="cadence-chosen-dot">● Active</span>}
+                        </div>
+                        <span className="cadence-preset-badge">
+                          {preset.subtitle} • {preset.rate}x pace
+                        </span>
+                      </div>
+                    </div>
+
+                    <p className="cadence-preset-desc">{preset.description}</p>
+
+                    <div className="cadence-preset-actions">
+                      <button
+                        type="button"
+                        className={`btn-cadence-preview ${isPlaying ? 'preview-playing' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handlePreviewCadence(preset.id)
+                        }}
+                      >
+                        {isPlaying ? '🔊 Speaking Preview...' : '▶ Listen to Cadence'}
+                      </button>
+                      {!isSelected && (
+                        <button
+                          type="button"
+                          className="btn-cadence-apply"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleSelectCadence(preset.id)
+                          }}
+                        >
+                          Select
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
           {/* Emotional Anchors in Use */}
           <div className="workspace-section-block">
             <div className="workspace-section-header">
               <span className="anchors-eyebrow">ACTIVE ANCHORS &amp; MEMORIES</span>
-              <Link to="/onboarding" className="edit-link">Edit Anchors</Link>
+              <Link
+                to={activePatient ? `/onboarding?edit=${activePatient.patient_id}` : '/onboarding'}
+                className="edit-link"
+              >
+                ✏️ Edit Anchors
+              </Link>
             </div>
             <div className="workspace-anchors-list">
               {activePatient?.preferences?.likes?.length > 0 ? (

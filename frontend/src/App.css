@@ -1759,3 +1759,316 @@
   color: var(--kural-pink);
   border-color: var(--border-interactive);
 }
+
+/* Profiles Search & Filter */
+.profiles-search-container {
+  margin: 14px 0 16px;
+}
+
+.profiles-search-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 9999px;
+  padding: 0 14px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.profiles-search-input-wrap:focus-within {
+  border-color: var(--border-interactive);
+  box-shadow: 0 0 0 3px rgba(242, 166, 191, 0.12);
+}
+
+.profiles-search-icon {
+  font-size: 14px;
+  opacity: 0.7;
+  margin-right: 8px;
+}
+
+.profiles-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 13px;
+  padding: 10px 0;
+  font-family: inherit;
+}
+
+.profiles-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.profiles-search-clear {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+.profiles-search-clear:hover {
+  color: #ffffff;
+}
+
+/* Profile Card Action Buttons */
+.profile-card-actions-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.btn-profile-edit-action {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  border-radius: 9999px;
+  color: var(--text-body);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-profile-edit-action:hover {
+  background: var(--kural-pink-soft);
+  color: var(--kural-pink);
+  border-color: var(--border-interactive);
+}
+
+.btn-profile-select-action {
+  background: transparent;
+  border: none;
+  color: var(--kural-pink);
+  font-size: 12.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.btn-profile-select-action:hover .action-arrow {
+  transform: translateX(3px);
+}
+
+.action-arrow {
+  transition: transform 0.15s ease;
+}
+
+/* Onboarding Editing Pill */
+.onboarding-editing-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(242, 166, 191, 0.12);
+  border: 1px solid var(--border-interactive);
+  border-radius: 12px;
+  padding: 8px 12px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: #ffffff;
+}
+
+.onboarding-editing-pill code {
+  color: var(--kural-pink);
+  font-weight: 700;
+}
+
+.btn-cancel-edit-link {
+  color: var(--text-muted);
+  font-size: 11.5px;
+  text-decoration: underline;
+}
+
+.btn-cancel-edit-link:hover {
+  color: #ffffff;
+}
+
+/* Companion Voice & Cadence Presets */
+.cadence-active-pill {
+  font-size: 11px;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+  padding: 3px 8px;
+  border-radius: 9999px;
+}
+
+.cadence-cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.cadence-preset-card {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cadence-preset-card:hover {
+  border-color: var(--border-interactive);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.cadence-preset-card-selected {
+  border-color: var(--kural-pink);
+  background: rgba(242, 166, 191, 0.08);
+}
+
+.cadence-preset-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cadence-preset-icon-wrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.cadence-preset-meta {
+  flex: 1;
+}
+
+.cadence-preset-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cadence-preset-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.cadence-chosen-dot {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #10b981;
+}
+
+.cadence-preset-badge {
+  font-size: 11px;
+  color: var(--kural-pink);
+  font-weight: 600;
+}
+
+.cadence-preset-desc {
+  font-size: 12px;
+  color: var(--text-body);
+  line-height: 1.4;
+  margin: 8px 0 10px;
+}
+
+.cadence-preset-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.btn-cadence-preview {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  border-radius: 9999px;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-cadence-preview:hover {
+  background: var(--kural-pink-soft);
+  color: var(--kural-pink);
+  border-color: var(--border-interactive);
+}
+
+.preview-playing {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.btn-cadence-apply {
+  background: transparent;
+  border: none;
+  color: var(--kural-pink);
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.btn-cadence-apply:hover {
+  text-decoration: underline;
+}
+
+/* Status Bars Row in Companion Chat */
+.status-bars-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-bars-row .safe-zone-bar {
+  flex: 1;
+}
+
+.cadence-mini-bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-size: 11px;
+  color: var(--text-body);
+  white-space: nowrap;
+}
+
+.cadence-mini-icon {
+  font-size: 12px;
+}
+
+.cadence-mini-text {
+  font-weight: 600;
+  color: var(--kural-pink);
+}
+
+.cadence-mini-tune {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-left: 2px;
+  transition: color 0.15s ease;
+}
+
+.cadence-mini-tune:hover {
+  color: #ffffff;
+}

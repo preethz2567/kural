@@ -1,12 +1,17 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { createPatient } from '../api.js'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { createPatient, updatePatient, fetchPatient } from '../api.js'
 import '../App.css'
 
 export default function Onboarding() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const editId = searchParams.get('edit')
+  const isEditing = Boolean(editId)
+
   const [step, setStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoadingProfile, setIsLoadingProfile] = useState(isEditing)
   const [error, setError] = useState(null)
 
   // Profile Form State
@@ -26,6 +31,46 @@ export default function Onboarding() {
     cherished_memories_str: '',
     caregiver_notes: '',
   })
+
+  // Prefill existing profile if editing
+  useEffect(() => {
+    if (!editId) return
+
+    let isMounted = true
+    setIsLoadingProfile(true)
+    setError(null)
+
+    fetchPatient(editId)
+      .then((p) => {
+        if (!isMounted || !p) return
+        setFormData({
+          name: p.name || '',
+          preferred_name: p.preferred_name || '',
+          age_range: p.age_range || '',
+          preferred_address: p.preferred_address || '',
+          stage: p.stage || 'unknown',
+          language: p.language || 'English',
+          communication_style: p.communication_style || 'gentle and reassuring',
+          profession: p.profession || '',
+          places_lived_str: (p.places_lived || []).join(', '),
+          likes_str: (p.preferences?.likes || []).join(', '),
+          dislikes_str: (p.preferences?.dislikes || []).join(', '),
+          calming_strategies_str: (p.calming_strategies || []).join('\n'),
+          cherished_memories_str: (p.cherished_memories || []).join('\n'),
+          caregiver_notes: p.caregiver_notes || '',
+        })
+      })
+      .catch((err) => {
+        if (isMounted) setError(`Unable to load profile to edit: ${err.message}`)
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingProfile(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [editId])
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -65,7 +110,7 @@ export default function Onboarding() {
     setIsSubmitting(true)
     setError(null)
 
-    const patient_id = generateStableId(formData.name)
+    const patient_id = isEditing ? editId : generateStableId(formData.name)
 
     const payload = {
       patient_id,
@@ -88,7 +133,11 @@ export default function Onboarding() {
     }
 
     try {
-      await createPatient(payload)
+      if (isEditing) {
+        await updatePatient(patient_id, payload)
+      } else {
+        await createPatient(payload)
+      }
       // Save selected profile in localStorage for session convenience
       localStorage.setItem('kural_active_patient_id', patient_id)
       setStep(7) // Success completion step
@@ -114,30 +163,55 @@ export default function Onboarding() {
 
       <div className="onboarding-container">
         <div className="portal-heading-section" style={{ marginBottom: '12px' }}>
-          <span className="anchors-eyebrow">GUIDED SETUP</span>
+          <span className="anchors-eyebrow">{isEditing ? 'EDIT PROFILE' : 'GUIDED SETUP'}</span>
           <h1 className="portal-display-title" style={{ fontSize: '26px' }}>
-            Personalize their
-            <span className="title-gradient"> companion care</span>
+            {isEditing ? (
+              <>
+                Update {formData.preferred_name || formData.name || 'Loved One'}&apos;s
+                <span className="title-gradient"> profile</span>
+              </>
+            ) : (
+              <>
+                Personalize their
+                <span className="title-gradient"> companion care</span>
+              </>
+            )}
           </h1>
-        </div>
-          {step <= 6 && (
-            <div className="step-progress-bar" aria-label="Onboarding Progress">
-              <div className="step-indicators">
-                {[1, 2, 3, 4, 5, 6].map((idx) => (
-                  <div
-                    key={idx}
-                    className={`step-dot ${step === idx ? 'step-active' : step > idx ? 'step-complete' : ''}`}
-                    title={`Step ${idx}`}
-                  >
-                    {step > idx ? '✓' : idx}
-                  </div>
-                ))}
-              </div>
-              <span className="step-counter-text">Step {step} of 6</span>
+          {isEditing && (
+            <div className="onboarding-editing-pill">
+              <span>✏️ Editing Profile ID: <code>{editId}</code></span>
+              <Link to="/profiles" className="btn-cancel-edit-link">Cancel</Link>
             </div>
           )}
+        </div>
 
-          {error && (
+        {isLoadingProfile && (
+          <div className="profiles-loading">
+            <div className="typing-indicator" aria-label="Loading profile to edit">
+              <span></span><span></span><span></span>
+            </div>
+            <p>Loading profile details...</p>
+          </div>
+        )}
+
+        {step <= 6 && !isLoadingProfile && (
+          <div className="step-progress-bar" aria-label="Onboarding Progress">
+            <div className="step-indicators">
+              {[1, 2, 3, 4, 5, 6].map((idx) => (
+                <div
+                  key={idx}
+                  className={`step-dot ${step === idx ? 'step-active' : step > idx ? 'step-complete' : ''}`}
+                  title={`Step ${idx}`}
+                >
+                  {step > idx ? '✓' : idx}
+                </div>
+              ))}
+            </div>
+            <span className="step-counter-text">Step {step} of 6</span>
+          </div>
+        )}
+
+        {error && (
             <div className="banner banner-error" role="alert">
               <span><strong>Notice:</strong> {error}</span>
               <button className="btn-dismiss" onClick={() => setError(null)} type="button">Dismiss</button>
@@ -607,7 +681,9 @@ export default function Onboarding() {
                   onClick={handleSubmit}
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? 'Saving Profile...' : 'Save & Create Profile ✓'}
+                  {isSubmitting
+                    ? isEditing ? 'Saving Changes...' : 'Saving Profile...'
+                    : isEditing ? 'Save Profile Changes ✓' : 'Save & Create Profile ✓'}
                 </button>
               </div>
             </div>
@@ -617,9 +693,11 @@ export default function Onboarding() {
           {step === 7 && (
             <div className="onboarding-card text-center">
               <div className="success-icon" aria-hidden="true">🌸</div>
-              <h2 className="onboarding-title">Profile Created with Care</h2>
+              <h2 className="onboarding-title">
+                {isEditing ? 'Profile Updated with Care' : 'Profile Created with Care'}
+              </h2>
               <p className="onboarding-desc">
-                {formData.preferred_name || formData.name}&apos;s profile is ready. Kural will warmly converse using their favorite memories, topics, and comforting cadence.
+                {formData.preferred_name || formData.name}&apos;s profile has been {isEditing ? 'updated' : 'created'}. Kural will warmly converse using their customized memories, topics, and comforting cadence.
               </p>
 
               <div className="success-actions">
@@ -631,7 +709,7 @@ export default function Onboarding() {
                   Open Companion Chat with {formData.preferred_name || formData.name} →
                 </button>
                 <Link to="/profiles" className="btn-stitch-secondary">
-                  View All Profiles
+                  View All Profiles in Directory
                 </Link>
               </div>
             </div>

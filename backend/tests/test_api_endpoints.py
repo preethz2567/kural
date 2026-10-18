@@ -400,3 +400,56 @@ class TestMissingRequiredFields:
             headers={"Content-Type": "text/plain"},
         )
         assert res.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# 16. Patient Directory & Mutations
+# ---------------------------------------------------------------------------
+
+class TestPatientEndpoints:
+    def test_list_patients_returns_200_and_list(self, client):
+        res = client.get("/patient")
+        assert res.status_code == 200
+        data = res.json()
+        assert isinstance(data, list)
+        assert len(data) >= 1
+        ids = [p["patient_id"] for p in data]
+        assert "patient_001" in ids
+
+    def test_update_patient_mismatched_id_returns_400(self, client):
+        res = client.put(
+            "/patient/patient_001",
+            json={
+                "patient_id": "different_id",
+                "name": "Different Name",
+            },
+        )
+        assert res.status_code == 400
+        assert "detail" in res.json()
+
+    def test_update_patient_success(self, client, monkeypatch, tmp_path):
+        import store.patient_store as ps
+        monkeypatch.setattr(ps, "DATA_DIR", str(tmp_path))
+
+        patient_payload = {
+            "patient_id": "test_person_99",
+            "name": "Test Person",
+            "preferred_name": "Tester",
+            "stage": "early",
+            "preferences": {"likes": ["Quiet walks", "Tea"], "dislikes": []},
+        }
+
+        # Create
+        res_create = client.post("/patient", json=patient_payload)
+        assert res_create.status_code == 201
+
+        # Update
+        patient_payload["preferred_name"] = "Tester Updated"
+        res_update = client.put("/patient/test_person_99", json=patient_payload)
+        assert res_update.status_code == 200
+        assert res_update.json()["preferred_name"] == "Tester Updated"
+
+        # Verify persisted via get
+        res_get = client.get("/patient/test_person_99")
+        assert res_get.status_code == 200
+        assert res_get.json()["preferred_name"] == "Tester Updated"

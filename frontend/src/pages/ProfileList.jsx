@@ -6,6 +6,7 @@ import '../App.css'
 export default function ProfileList() {
   const navigate = useNavigate()
   const [patients, setPatients] = useState([])
+  const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedId, setSelectedId] = useState(() => {
@@ -41,6 +42,18 @@ export default function ProfileList() {
     navigate('/companion')
   }
 
+  const filteredPatients = patients.filter((p) => {
+    if (!searchQuery.trim()) return true
+    const q = searchQuery.toLowerCase().trim()
+    const matchName = (p.name || '').toLowerCase().includes(q)
+    const matchPref = (p.preferred_name || '').toLowerCase().includes(q)
+    const matchProf = (p.profession || '').toLowerCase().includes(q)
+    const matchPlaces = (p.places_lived || []).some((pl) => pl.toLowerCase().includes(q))
+    const matchLikes = (p.preferences?.likes || []).some((l) => l.toLowerCase().includes(q))
+    const matchMemories = (p.cherished_memories || []).some((m) => m.toLowerCase().includes(q))
+    return matchName || matchPref || matchProf || matchPlaces || matchLikes || matchMemories
+  })
+
   return (
     <div className="stitch-mobile-frame">
       {/* Top Capsule Header */}
@@ -55,7 +68,7 @@ export default function ProfileList() {
       </header>
 
       <div className="profiles-page-head">
-        <span className="anchors-eyebrow">FAMILY PROFILES</span>
+        <span className="anchors-eyebrow">FAMILY &amp; ELDER DIRECTORY</span>
         <h1 className="portal-display-title">
           Choose a loved one&apos;s
           <span className="title-gradient"> companion session</span>
@@ -63,6 +76,30 @@ export default function ProfileList() {
         <p className="portal-lead">
           Each person has their own cherished memories, familiar cadence, and stage-adaptive pacing.
         </p>
+
+        {/* Search & Filter Bar */}
+        <div className="profiles-search-container">
+          <div className="profiles-search-input-wrap">
+            <span className="profiles-search-icon">🔍</span>
+            <input
+              type="text"
+              className="profiles-search-input"
+              placeholder="Search by name, place, or memory..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="profiles-search-clear"
+                onClick={() => setSearchQuery('')}
+                aria-label="Clear search"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
 
         <div className="profiles-top-actions">
           <Link to="/onboarding" className="btn-stitch-primary">
@@ -97,9 +134,23 @@ export default function ProfileList() {
             Create First Profile →
           </Link>
         </div>
+      ) : filteredPatients.length === 0 ? (
+        <div className="empty-profiles-card">
+          <div className="empty-icon" aria-hidden="true">🔍</div>
+          <h2>No Matching Profiles Found</h2>
+          <p>No elders found matching &ldquo;{searchQuery}&rdquo;. Try another name, place, or memory anchor.</p>
+          <button
+            type="button"
+            className="btn-stitch-secondary"
+            onClick={() => setSearchQuery('')}
+            style={{ marginTop: '12px' }}
+          >
+            Clear Search Filter
+          </button>
+        </div>
       ) : (
         <div className="profiles-grid-column">
-          {patients.map((p) => {
+          {filteredPatients.map((p) => {
             const isActive = p.patient_id === selectedId
             const preferred = p.preferred_name || p.name
             const stageLabel = p.stage && p.stage !== 'unknown'
@@ -116,9 +167,13 @@ export default function ProfileList() {
               >
                 <div className="profile-card-top-row">
                   <div className="portal-avatar-ring-small">
-                    <div className="portal-avatar-circle-small">
-                      <span className="avatar-initial-small">{preferred.charAt(0).toUpperCase()}</span>
-                    </div>
+                    {p.patient_id === 'patient_kalyani' ? (
+                      <img src="/avatar_amma.jpg" alt={preferred} className="portal-avatar-img" />
+                    ) : (
+                      <div className="portal-avatar-circle-small">
+                        <span className="avatar-initial-small">{preferred.charAt(0).toUpperCase()}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="profile-meta-block">
@@ -160,11 +215,27 @@ export default function ProfileList() {
                   )}
                 </div>
 
-                <div className="profile-card-action-bar">
-                  <span className="profile-card-cta-text">
-                    {isActive ? `Chatting with ${preferred}` : `Switch to ${preferred}`}
-                  </span>
-                  <span className="profile-card-cta-arrow">→</span>
+                <div className="profile-card-actions-footer">
+                  <button
+                    type="button"
+                    className="btn-profile-edit-action"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      navigate(`/onboarding?edit=${p.patient_id}`)
+                    }}
+                    title="Edit profile details, anchors, and memories"
+                  >
+                    ✏️ Edit Profile
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn-profile-select-action"
+                    onClick={() => handleSelect(p.patient_id)}
+                  >
+                    <span>{isActive ? `Chat with ${preferred}` : `Select & Chat`}</span>
+                    <span className="action-arrow">→</span>
+                  </button>
                 </div>
               </article>
             )

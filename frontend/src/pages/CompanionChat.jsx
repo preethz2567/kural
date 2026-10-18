@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { checkBackendHealth, fetchPatient, sendChatMessage } from '../api.js'
+import { CADENCE_PRESETS } from './CaregiverPlaceholder.jsx'
 import '../App.css'
 
 function createSessionId(prefix = 'sess') {
@@ -236,8 +237,12 @@ export default function CompanionChat() {
     speechSynthesis.cancel()
     const cleanText = textToSpeak.replace(/\[.*?\]/g, '').trim()
     const utterance = new SpeechSynthesisUtterance(cleanText)
-    utterance.rate = 0.85 // Warm, unhurried, reassuring pace
-    utterance.pitch = 1.05
+
+    // Apply configured caregiver cadence preset
+    const cadenceKey = localStorage.getItem('kural_voice_cadence') || 'maternal'
+    const preset = CADENCE_PRESETS[cadenceKey] || CADENCE_PRESETS.maternal
+    utterance.rate = preset.rate
+    utterance.pitch = preset.pitch
 
     const voices = speechSynthesis.getVoices()
     const gentleVoice = voices.find(
@@ -350,13 +355,23 @@ export default function CompanionChat() {
           </button>
         </div>
 
-        {/* Live Safety Safe Zone Indicator */}
-        <div className="safe-zone-bar">
-          <span className="safe-zone-icon">📍</span>
-          <span className="safe-zone-label">
-            <strong>Safe Zone Active:</strong> {patientData?.places_lived?.[0] || 'Home (Safe)'} • Wandering alert guard on
-          </span>
-          <span className="safe-zone-badge">Normal</span>
+        {/* Live Safety Safe Zone & Cadence Indicators */}
+        <div className="status-bars-row">
+          <div className="safe-zone-bar">
+            <span className="safe-zone-icon">📍</span>
+            <span className="safe-zone-label">
+              <strong>Safe Zone:</strong> {patientData?.places_lived?.[0] || 'Home (Safe)'}
+            </span>
+            <span className="safe-zone-badge">Normal</span>
+          </div>
+
+          <div className="cadence-mini-bar">
+            <span className="cadence-mini-icon">🎙️</span>
+            <span className="cadence-mini-text">
+              {CADENCE_PRESETS[localStorage.getItem('kural_voice_cadence') || 'maternal']?.title || 'Gentle Maternal'}
+            </span>
+            <Link to="/caregiver" className="cadence-mini-tune" title="Adjust voice cadence in Caregiver Workspace">⚙</Link>
+          </div>
         </div>
       </div>
 
