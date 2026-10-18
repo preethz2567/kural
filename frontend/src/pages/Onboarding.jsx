@@ -380,6 +380,31 @@ export default function Onboarding() {
                 <label className="form-label" htmlFor="likes_str">
                   Favourite Things &amp; Topics (comma-separated)
                 </label>
+                <div className="onboarding-suggested-anchors">
+                  <span className="suggested-anchors-label">Quick Suggestions (tap to add):</span>
+                  <div className="suggested-chips-grid">
+                    {['🌸 Gardening & Flowers', '☕ Afternoon Tea / Coffee', '🎶 Classical Music / Songs', '☀️ Morning Sunshine', '📖 Treasured Old Stories', '🐾 Pets & Birds'].map((item) => (
+                      <button
+                        key={item}
+                        type="button"
+                        className="btn-suggested-chip"
+                        onClick={() => {
+                          const cleanItem = item.replace(/^[^\w]+/, '').trim()
+                          setFormData((prev) => {
+                            const existing = prev.likes_str ? prev.likes_str.split(',').map((s) => s.trim()) : []
+                            if (existing.includes(cleanItem)) return prev
+                            return {
+                              ...prev,
+                              likes_str: existing.length > 0 ? `${prev.likes_str}, ${cleanItem}` : cleanItem,
+                            }
+                          })
+                        }}
+                      >
+                        + {item}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <input
                   id="likes_str"
                   type="text"
@@ -456,6 +481,30 @@ export default function Onboarding() {
                 <label className="form-label" htmlFor="calming_strategies_str">
                   Calming Strategies (one per line)
                 </label>
+                <div className="onboarding-suggested-anchors">
+                  <span className="suggested-anchors-label">Quick Soothing Suggestions:</span>
+                  <div className="suggested-chips-grid">
+                    {['Take three slow gentle breaths together', 'Remind them of afternoon tea', 'Mention a beloved garden', 'Assure them that they are safe and loved'].map((item) => (
+                      <button
+                        key={item}
+                        type="button"
+                        className="btn-suggested-chip"
+                        onClick={() => {
+                          setFormData((prev) => {
+                            const existing = prev.calming_strategies_str ? prev.calming_strategies_str.split('\n').map((s) => s.trim()) : []
+                            if (existing.includes(item)) return prev
+                            return {
+                              ...prev,
+                              calming_strategies_str: existing.length > 0 ? `${prev.calming_strategies_str}\n${item}` : item,
+                            }
+                          })
+                        }}
+                      >
+                        + {item}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <textarea
                   id="calming_strategies_str"
                   className="form-textarea"
