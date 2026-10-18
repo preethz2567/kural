@@ -49,9 +49,13 @@ export default function CaregiverPortal() {
       {/* Dynamic Profile Avatar Hero */}
       <div className="portal-avatar-wrap">
         <div className="portal-avatar-ring">
-          <div className="portal-avatar-circle">
-            <span className="portal-avatar-letter">{initialLetter}</span>
-          </div>
+          {activePatient?.patient_id === 'patient_kalyani' ? (
+            <img src="/avatar_amma.jpg" alt={preferredName} className="portal-avatar-img" />
+          ) : (
+            <div className="portal-avatar-circle">
+              <span className="portal-avatar-letter">{initialLetter}</span>
+            </div>
+          )}
           <div className="avatar-heart-badge">♥</div>
         </div>
       </div>

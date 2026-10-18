@@ -6,6 +6,7 @@ import '../App.css'
 export default function LandingPage() {
   const navigate = useNavigate()
   const [activePatient, setActivePatient] = useState(null)
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false)
 
   useEffect(() => {
     listPatients()
@@ -22,6 +23,34 @@ export default function LandingPage() {
   const preferredName = activePatient?.preferred_name || activePatient?.name || 'Loved One'
   const caregiverName = activePatient?.relationships?.[0]?.name || 'Caregiver'
 
+  // Voice Preview simulation using Web Speech Synthesis
+  const handlePlayVoicePreview = () => {
+    if ('speechSynthesis' in window) {
+      if (speechSynthesis.speaking) {
+        speechSynthesis.cancel()
+        setIsPlayingAudio(false)
+        return
+      }
+
+      setIsPlayingAudio(true)
+      const text = `Hello, ${preferredName}. I am right here keeping you company. Take your time, everything is peaceful and calm today.`
+      const utterance = new SpeechSynthesisUtterance(text)
+      utterance.rate = 0.85 // Warm, unhurried, reassuring pace
+      utterance.pitch = 1.05
+
+      // Select gentle voice if available
+      const voices = speechSynthesis.getVoices()
+      const gentleVoice = voices.find((v) => v.lang.startsWith('en') && (v.name.includes('Female') || v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Google')))
+      if (gentleVoice) utterance.voice = gentleVoice
+
+      utterance.onend = () => setIsPlayingAudio(false)
+      utterance.onerror = () => setIsPlayingAudio(false)
+      speechSynthesis.speak(utterance)
+    } else {
+      alert('Speech synthesis is not supported on this browser.')
+    }
+  }
+
   return (
     <div className="stitch-mobile-frame stitch-landing-frame">
       {/* Top Capsule Header */}
@@ -35,13 +64,22 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* Hero Avatar & Intergenerational Link */}
+      {/* Hero Family Image & Intergenerational Link */}
       <div className="landing-hero-center">
-        <div className="portal-avatar-ring">
-          <div className="portal-avatar-circle">
-            <span className="portal-avatar-letter">{preferredName.charAt(0).toUpperCase()}</span>
+        <div className="landing-portrait-card">
+          <img
+            src="/hero_family.jpg"
+            alt="Family holding hands warmly on a sunlit veranda"
+            className="landing-family-img"
+          />
+          <div className="landing-avatar-overlap">
+            <img
+              src="/avatar_amma.jpg"
+              alt={preferredName}
+              className="landing-mini-avatar"
+            />
+            <div className="avatar-heart-badge">♥</div>
           </div>
-          <div className="avatar-heart-badge">♥</div>
         </div>
 
         <div className="intergenerational-names-pill">
@@ -55,8 +93,19 @@ export default function LandingPage() {
         </h1>
 
         <p className="landing-body-lead">
-          Small messages can become familiar, reassuring moments in their day. Preserving cherished memories, familiar cadence, and who they are.
+          Small messages become familiar, reassuring moments in their day. Preserving cherished memories, maternal cadence, and who they are.
         </p>
+
+        {/* Audio Sample Preview Button */}
+        <button
+          type="button"
+          className={`btn-voice-preview ${isPlayingAudio ? 'voice-playing' : ''}`}
+          onClick={handlePlayVoicePreview}
+          title="Listen to a voice sample of Kural"
+        >
+          <span className="voice-icon">{isPlayingAudio ? '⏹' : '▶'}</span>
+          <span>{isPlayingAudio ? 'Playing gentle voice sample...' : 'Listen to Kural’s gentle cadence'}</span>
+        </button>
       </div>
 
       {/* Main Choice Cards Grid */}

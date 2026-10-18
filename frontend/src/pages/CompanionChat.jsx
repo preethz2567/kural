@@ -226,6 +226,69 @@ export default function CompanionChat() {
     )
   }
 
+  // Voice Input (Web Speech Recognition) & Speech Synthesis (TTS)
+  const [isListening, setIsListening] = useState(false)
+  const [isSpeaking, setIsSpeaking] = useState(false)
+  const recognitionRef = useRef(null)
+
+  const speakReply = (textToSpeak) => {
+    if (!('speechSynthesis' in window)) return
+    speechSynthesis.cancel()
+    const cleanText = textToSpeak.replace(/\[.*?\]/g, '').trim()
+    const utterance = new SpeechSynthesisUtterance(cleanText)
+    utterance.rate = 0.85 // Warm, unhurried, reassuring pace
+    utterance.pitch = 1.05
+
+    const voices = speechSynthesis.getVoices()
+    const gentleVoice = voices.find(
+      (v) =>
+        v.lang.startsWith('en') &&
+        (v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Google') || v.name.includes('Female'))
+    )
+    if (gentleVoice) utterance.voice = gentleVoice
+
+    utterance.onstart = () => setIsSpeaking(true)
+    utterance.onend = () => setIsSpeaking(false)
+    utterance.onerror = () => setIsSpeaking(false)
+    speechSynthesis.speak(utterance)
+  }
+
+  const toggleVoiceInput = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      alert('Voice speech recognition is not supported on this browser. Chrome or Edge recommended.')
+      return
+    }
+
+    if (isListening) {
+      recognitionRef.current?.stop()
+      setIsListening(false)
+      return
+    }
+
+    try {
+      const recognition = new SpeechRecognition()
+      recognition.continuous = false
+      recognition.interimResults = false
+      recognition.lang = 'en-US'
+
+      recognition.onstart = () => setIsListening(true)
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript
+        if (transcript) {
+          setInputText((prev) => (prev ? `${prev} ${transcript}` : transcript))
+        }
+      }
+      recognition.onerror = () => setIsListening(false)
+      recognition.onend = () => setIsListening(false)
+
+      recognitionRef.current = recognition
+      recognition.start()
+    } catch {
+      setIsListening(false)
+    }
+  }
+
   return (
     <div className="stitch-mobile-frame stitch-companion-frame">
       {/* Top Bar Header */}
@@ -255,31 +318,46 @@ export default function CompanionChat() {
             onClick={() => navigate('/profiles')}
             title="Switch profile"
           >
-            <div className="header-avatar-initial">
-              {preferredName.charAt(0).toUpperCase()}
-            </div>
+            {activePatientId === 'patient_kalyani' ? (
+              <img src="/avatar_amma.jpg" alt={preferredName} className="header-avatar-img" />
+            ) : (
+              <div className="header-avatar-initial">
+                {preferredName.charAt(0).toUpperCase()}
+              </div>
+            )}
           </button>
         </div>
       </header>
 
-      {/* Intergenerational Link Banner (Dynamic) */}
-      <div className="intergenerational-pill-row">
-        <div className="intergenerational-left">
-          <span className="heart-circle-dark">♥</span>
-          <div>
-            <div className="intergenerational-eyebrow">LINKED COMPANION SESSION</div>
-            <div className="intergenerational-names">
-              {caregiverName} &amp; {preferredName}
+      {/* Safe Zone & Intergenerational Link Banner */}
+      <div className="companion-status-stack">
+        <div className="intergenerational-pill-row">
+          <div className="intergenerational-left">
+            <span className="heart-circle-dark">♥</span>
+            <div>
+              <div className="intergenerational-eyebrow">LINKED COMPANION SESSION</div>
+              <div className="intergenerational-names">
+                {caregiverName} &amp; {preferredName}
+              </div>
             </div>
           </div>
+          <button
+            type="button"
+            className="btn-status-pill"
+            onClick={() => navigate('/profiles')}
+          >
+            ● Switch Person
+          </button>
         </div>
-        <button
-          type="button"
-          className="btn-status-pill"
-          onClick={() => navigate('/profiles')}
-        >
-          ● Switch Person
-        </button>
+
+        {/* Live Safety Safe Zone Indicator */}
+        <div className="safe-zone-bar">
+          <span className="safe-zone-icon">📍</span>
+          <span className="safe-zone-label">
+            <strong>Safe Zone Active:</strong> {patientData?.places_lived?.[0] || 'Home (Safe)'} • Wandering alert guard on
+          </span>
+          <span className="safe-zone-badge">Normal</span>
+        </div>
       </div>
 
       {/* Main Section Banner */}
@@ -291,15 +369,27 @@ export default function CompanionChat() {
 
         {/* Dynamic Portrait Hero Card */}
         <div className="hero-portrait-card">
-          <div className="hero-portrait-placeholder">
-            <span className="hero-giant-initial">{preferredName.charAt(0).toUpperCase()}</span>
-            <span className="hero-person-fullname">{patientData?.name || preferredName}</span>
-          </div>
+          {activePatientId === 'patient_kalyani' ? (
+            <img
+              src="/hero_family.jpg"
+              alt="Kalyani Amma and daughter"
+              className="hero-portrait-image"
+            />
+          ) : (
+            <div className="hero-portrait-placeholder">
+              <span className="hero-giant-initial">{preferredName.charAt(0).toUpperCase()}</span>
+              <span className="hero-person-fullname">{patientData?.name || preferredName}</span>
+            </div>
+          )}
           <div className="portrait-overlay-strip">
             <div className="overlay-person-badge">
-              <div className="overlay-mini-avatar">
-                {preferredName.charAt(0).toUpperCase()}
-              </div>
+              {activePatientId === 'patient_kalyani' ? (
+                <img src="/avatar_amma.jpg" alt={preferredName} className="overlay-mini-avatar-img" />
+              ) : (
+                <div className="overlay-mini-avatar">
+                  {preferredName.charAt(0).toUpperCase()}
+                </div>
+              )}
               <div>
                 <div className="overlay-name-row">
                   <span className="overlay-name">{preferredName}</span>
@@ -430,8 +520,18 @@ export default function CompanionChat() {
                 </div>
                 <div className="bubble-text-content">{msg.text}</div>
                 {msg.sender === 'companion' && (
-                  <div className="bubble-reaction-note">
-                    Reaction noted: <em>Gentle calm and attentive</em>
+                  <div className="bubble-bottom-row">
+                    <button
+                      type="button"
+                      className="btn-speak-bubble"
+                      onClick={() => speakReply(msg.text)}
+                      title="Listen to this message"
+                    >
+                      🔊 Listen
+                    </button>
+                    <div className="bubble-reaction-note">
+                      Reaction noted: <em>Gentle calm and attentive</em>
+                    </div>
                   </div>
                 )}
               </div>
@@ -452,7 +552,7 @@ export default function CompanionChat() {
         </div>
       </section>
 
-      {/* Floating Input Dock */}
+      {/* Floating Input Dock with Voice Input Button */}
       <footer className="stitch-chat-dock">
         <form
           className="dock-input-form"
@@ -461,16 +561,27 @@ export default function CompanionChat() {
             handleSend()
           }}
         >
+          <button
+            type="button"
+            className={`dock-mic-btn ${isListening ? 'mic-listening' : ''}`}
+            onClick={toggleVoiceInput}
+            title={isListening ? 'Listening... tap to stop' : 'Tap to speak to Kural'}
+            aria-label="Voice input"
+          >
+            {isListening ? '🔴' : '🎙️'}
+          </button>
+
           <textarea
             ref={textareaRef}
             className="dock-textarea"
-            placeholder={`Type a gentle message to ${preferredName}... (Enter to send)`}
+            placeholder={isListening ? 'Listening to your voice...' : `Type or speak to ${preferredName}...`}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
             rows={1}
             disabled={isLoading}
           />
+
           <button
             type="submit"
             className="dock-send-btn"
