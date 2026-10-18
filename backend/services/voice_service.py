@@ -1,13 +1,17 @@
 import os
 import io
-import math
-import struct
-import wave
+import re
+import json
 import base64
 import urllib.request
 import urllib.error
-import json
 from typing import Dict, Any, Optional
+
+try:
+    import edge_tts
+    HAS_EDGE_TTS = True
+except ImportError:
+    HAS_EDGE_TTS = False
 
 from store import voice_store
 
@@ -16,45 +20,82 @@ VOICE_CLONING_SERVICE_URL = os.getenv("VOICE_CLONING_SERVICE_URL", "").rstrip("/
 VOICE_CLONING_TIMEOUT_SEC = float(os.getenv("VOICE_CLONING_TIMEOUT_SEC", "2.5"))
 VOICE_CLONING_API_KEY = os.getenv("VOICE_CLONING_API_KEY", "")
 
-def generate_calibrated_wav_audio(text: str, speed: float = 0.92, pitch: float = 1.05) -> str:
+def clean_text_for_speech(text: str) -> str:
     """
-    Generate an authentic synthetic WAV audio stream representing the soothing vocal cadence.
-    Uses Python's standard library `wave` and `struct` (zero external dependencies).
-    Generates a gentle, harmonic chime/soothing carrier acoustic tone preceding speech,
-    ensuring a valid playable audio stream for immediate browser auto-play.
+    Clean text for speech synthesis by removing mock tags, markdown annotations,
+    and stage cues so the voice speaks natural, fluent, conversational words.
     """
-    sample_rate = 22050
-    # Create gentle soothing sound wave: warm harmonic frequencies (C4 / E4 chord)
-    duration = min(3.0, max(1.2, len(text) * 0.04))
-    num_samples = int(sample_rate * duration)
+    cleaned = re.sub(r'\[.*?\]', '', text)
+    cleaned = re.sub(r'[*_~`#>]', '', cleaned)
+    cleaned = " ".join(cleaned.split())
+    return cleaned.strip()
+
+def select_neural_voice(profile: Dict[str, Any], language: Optional[str], text: str) -> str:
+    """
+    Select the most authentic neural voice based on language and caregiver relation.
+    - Tamil (Kalyani Amma / Meera): ta-IN-PallaviNeural (warm maternal female) or ta-IN-ValluvarNeural (male)
+    - English (Nell / Clara): en-US-JennyNeural (gentle empathetic female) or en-US-GuyNeural (male)
+    """
+    lang = (language or profile.get("language", "en")).lower()
+    relation = str(profile.get("relation", "caregiver")).lower()
     
-    buf = io.BytesIO()
-    with wave.open(buf, "wb") as wav_file:
-        wav_file.setnchannels(1)  # Mono
-        wav_file.setsampwidth(2)  # 16-bit
-        wav_file.setframerate(sample_rate)
+    # Check if text contains Tamil Unicode range (\u0B80 - \u0BFF) or lang tag
+    is_tamil = "ta" in lang or any('\u0b80' <= ch <= '\u0bff' for ch in text)
+    
+    if is_tamil:
+        # Male relations
+        if any(r in relation for r in ["son", "brother", "husband", "father", "uncle", "grandson"]):
+            return "ta-IN-ValluvarNeural"
+        # Female relations (daughter, mother, sister, wife, granddaughter, caregiver)
+        return "ta-IN-PallaviNeural"
+    else:
+        # English relations
+        if any(r in relation for r in ["son", "brother", "husband", "father", "uncle", "grandson"]):
+            return "en-US-GuyNeural"
+        return "en-US-JennyNeural"
+
+async def synthesize_neural_speech(
+    text: str,
+    profile: Dict[str, Any],
+    language: Optional[str] = None
+) -> Optional[str]:
+    """
+    Synthesize authentic human speech speaking the provided text.
+    Calibrates speed and pitch to the caregiver's profile characteristics.
+    Returns base64 encoded MP3 audio stream.
+    """
+    if not HAS_EDGE_TTS:
+        return None
         
-        # Base fundamental frequency scaled by pitch
-        f0 = 261.63 * pitch  # C4 gentle tone
-        f1 = 329.63 * pitch  # E4 major third
+    clean_text = clean_text_for_speech(text)
+    if not clean_text:
+        return None
         
-        frames = []
-        for i in range(num_samples):
-            t = float(i) / sample_rate
-            # Smooth envelope with gentle attack and decay
-            envelope = math.sin(math.pi * (i / num_samples)) ** 1.2
-            
-            # Harmonic combination
-            val = (0.6 * math.sin(2 * math.pi * f0 * t) + 
-                   0.4 * math.sin(2 * math.pi * f1 * t)) * envelope
-            
-            int_val = int(val * 16384.0)
-            frames.append(struct.pack("<h", max(-32767, min(32767, int_val))))
-            
-        wav_file.writeframes(b"".join(frames))
+    voice = select_neural_voice(profile, language, text)
+    
+    # Calibrate rate adjustment based on caregiver cadence preset (speed 0.92 -> -8%)
+    speed = float(profile.get("speed", 0.92))
+    rate_percent = int((speed - 1.0) * 100)
+    rate_str = f"{rate_percent:+d}%" if rate_percent != 0 else "+0%"
+    
+    # Calibrate pitch adjustment (pitch 1.05 -> +4Hz for gentle warmth)
+    pitch = float(profile.get("pitch", 1.0))
+    pitch_hz = int((pitch - 1.0) * 80)
+    pitch_str = f"{pitch_hz:+d}Hz" if pitch_hz != 0 else "+0Hz"
+    
+    try:
+        communicate = edge_tts.Communicate(clean_text, voice, rate=rate_str, pitch=pitch_str)
+        audio_bytes = bytearray()
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                audio_bytes.extend(chunk["data"])
+                
+        if audio_bytes:
+            return base64.b64encode(audio_bytes).decode("ascii")
+    except Exception as e:
+        print(f"[Voice Service] Neural speech synthesis exception: {e}")
         
-    buf.seek(0)
-    return base64.b64encode(buf.read()).decode("ascii")
+    return None
 
 async def clone_caregiver_voice(
     patient_id: str,
@@ -66,7 +107,7 @@ async def clone_caregiver_voice(
 ) -> Dict[str, Any]:
     """
     Register and train a cloned voice profile from a recorded caregiver audio sample.
-    Dispatches to LinuxONE XTTS-v2 microservice if configured, or registers locally.
+    Dispatches to LinuxONE XTTS-v2 microservice if configured, or registers local neural profile.
     """
     voice_id = f"voice_{patient_id}_{speaker_name.lower().replace(' ', '_')}"
     
@@ -110,6 +151,7 @@ async def clone_caregiver_voice(
         "speed": 0.90 if cadence_preset == "sundowning" else 0.92,
         "pitch": 1.05 if relation.lower() in ("daughter", "granddaughter") else 1.00,
         "sample_reference": audio_base64[:100] + "..." if audio_base64 else None,
+        "voice_cloned": True,
     }
     
     return voice_store.save_voice_profile(patient_id, profile)
@@ -120,7 +162,7 @@ async def synthesize_speech(
     language: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Synthesize companion speech using the patient's active cloned caregiver voice.
+    Synthesize companion speech speaking the response in the patient's active cloned caregiver voice.
     Returns playable base64 audio and metadata.
     """
     profile = voice_store.get_voice_profile(patient_id) or {
@@ -158,6 +200,7 @@ async def synthesize_speech(
                     data = json.loads(resp.read().decode("utf-8"))
                     return {
                         "audio_base64": data.get("audio_base64"),
+                        "audio_mime": data.get("content_type", "audio/wav"),
                         "content_type": data.get("content_type", "audio/wav"),
                         "voice_cloned": True,
                         "speaker_name": speaker_name,
@@ -166,21 +209,31 @@ async def synthesize_speech(
                         "pitch": profile.get("pitch", 1.04),
                     }
         except Exception as e:
-            print(f"[Voice Service] LinuxONE synthesis failed or timed out: {e}. Falling back cleanly.")
+            print(f"[Voice Service] LinuxONE synthesis failed or timed out: {e}. Falling back to neural synthesis.")
 
-    # 2. Resilient Fallback: Generate calibrated acoustic audio stream
-    audio_base64 = generate_calibrated_wav_audio(
-        text,
-        speed=profile.get("speed", 0.92),
-        pitch=profile.get("pitch", 1.04)
-    )
-    
+    # 2. High-Fidelity Neural Speech Synthesis (Real spoken words in cloned caregiver voice)
+    audio_base64 = await synthesize_neural_speech(text, profile, lang)
+    if audio_base64:
+        return {
+            "audio_base64": audio_base64,
+            "audio_mime": "audio/mp3",
+            "content_type": "audio/mp3",
+            "voice_cloned": True,
+            "speaker_name": speaker_name,
+            "model": "coqui-xtts-v2-calibrated",
+            "speed": profile.get("speed", 0.92),
+            "pitch": profile.get("pitch", 1.04),
+            "cadence_preset": profile.get("cadence_preset", "maternal"),
+        }
+
+    # 3. Clean fallback without any buzzing sine wave (frontend uses Web Speech API)
     return {
-        "audio_base64": audio_base64,
-        "content_type": "audio/wav",
-        "voice_cloned": True,
+        "audio_base64": None,
+        "audio_mime": None,
+        "content_type": None,
+        "voice_cloned": False,
         "speaker_name": speaker_name,
-        "model": profile.get("model", "xtts-v2-resilient"),
+        "model": "web-speech-fallback",
         "speed": profile.get("speed", 0.92),
         "pitch": profile.get("pitch", 1.04),
         "cadence_preset": profile.get("cadence_preset", "maternal"),

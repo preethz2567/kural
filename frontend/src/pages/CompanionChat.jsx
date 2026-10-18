@@ -442,7 +442,7 @@ export default function CompanionChat() {
 
     if (audioData?.audio_base64) {
       try {
-        const mime = audioData.audio_mime || 'audio/wav'
+        const mime = audioData.audio_mime || audioData.content_type || 'audio/mp3'
         const audioUrl = `data:${mime};base64,${audioData.audio_base64}`
         const audio = new Audio(audioUrl)
         clonedAudioRef.current = audio

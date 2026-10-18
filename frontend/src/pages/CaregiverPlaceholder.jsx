@@ -536,7 +536,8 @@ Generated with love by Kural Dementia Companion Care.
           testAudioPlayerRef.current.pause()
           testAudioPlayerRef.current = null
         }
-        const audio = new Audio(`data:${res.content_type || 'audio/wav'};base64,${res.audio_base64}`)
+        const mime = res.content_type || res.audio_mime || 'audio/mp3'
+        const audio = new Audio(`data:${mime};base64,${res.audio_base64}`)
         testAudioPlayerRef.current = audio
         setIsPlayingTestVoice(true)
         audio.onended = () => setIsPlayingTestVoice(false)
