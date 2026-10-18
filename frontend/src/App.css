@@ -9,10 +9,10 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 16px 16px 20px;
+  justify-content: flex-start; /* Ensures content is never pushed off the top */
+  padding: 32px 16px 48px;     /* Comfortable, visible breathing space */
   box-sizing: border-box;
-  overflow-x: hidden;
+  overflow-y: auto;            /* Outer page can scroll if laptop screen is small */
   position: relative;
 }
 
@@ -142,26 +142,26 @@
 .web-preview-header-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   width: 100%;
-  max-width: 416px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   padding: 0 4px;
 }
 
 .web-preview-pill {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(220, 205, 215, 0.8);
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(215, 198, 210, 0.9);
   border-radius: 9999px;
-  padding: 5px 14px;
-  font-size: 11px;
+  padding: 6px 16px;
+  font-size: 11.5px;
   font-weight: 600;
   color: #2e2329;
-  box-shadow: 0 4px 12px rgba(80, 50, 70, 0.06);
+  box-shadow: 0 4px 14px rgba(90, 60, 80, 0.08);
+  white-space: nowrap;
 }
 
 .preview-pulse-dot {
@@ -171,6 +171,7 @@
   background: #16a34a;
   box-shadow: 0 0 6px #16a34a;
   animation: pulsePreviewGlow 2s infinite ease-in-out;
+  flex-shrink: 0;
 }
 
 @keyframes pulsePreviewGlow {
@@ -181,29 +182,35 @@
 .preview-label {
   color: #1e1319;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .preview-divider {
-  color: #a4939d;
+  color: #b09fa9;
 }
 
 .preview-sub {
   color: #b84e73;
   font-weight: 600;
+  white-space: nowrap;
 }
 
-.web-preview-hint {
-  font-size: 11px;
+.preview-hint-tag {
+  background: rgba(184, 78, 115, 0.08);
+  border-radius: 9999px;
+  padding: 2px 8px;
   color: #7a6b74;
+  font-size: 10.5px;
   font-weight: 500;
-  letter-spacing: 0.2px;
+  margin-left: 4px;
+  white-space: nowrap;
 }
 
 /* The Physical Smartphone Chassis */
 .phone-device-chassis {
   position: relative;
   width: 412px;
-  height: min(870px, calc(100vh - 68px));
+  height: min(830px, calc(100vh - 110px));
   background: #141218;
   border-radius: 54px;
   padding: 10px;
@@ -642,6 +649,7 @@
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
+  object-position: center 20%;
   display: block;
 }
 
@@ -1073,7 +1081,9 @@
   height: 32px;
   border-radius: 50%;
   object-fit: cover;
+  object-position: center 20%;
   border: 1px solid var(--border-interactive);
+  display: block;
 }
 
 /* Intergenerational Banner */
@@ -1188,8 +1198,9 @@
 
 .hero-portrait-image {
   width: 100%;
-  height: 220px;
+  height: 230px;
   object-fit: cover;
+  object-position: center 20%;
   display: block;
 }
 
@@ -1239,6 +1250,16 @@
   align-items: center;
   justify-content: center;
   border: 2px solid #ffffff;
+}
+
+.overlay-mini-avatar-img {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center 20%;
+  border: 2px solid #ffffff;
+  display: block;
 }
 
 .overlay-name-row {
@@ -1730,8 +1751,9 @@
 
 .landing-family-img {
   width: 100%;
-  height: 200px;
+  height: 220px;
   object-fit: cover;
+  object-position: center 20%;
   display: block;
 }
 
@@ -1739,8 +1761,8 @@
   position: absolute;
   bottom: 12px;
   left: 14px;
-  width: 60px;
-  height: 60px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
   border: 2.5px solid #ffffff;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
@@ -1751,6 +1773,8 @@
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
+  object-position: center 20%;
+  display: block;
 }
 
 /* Safe Zone Bar */

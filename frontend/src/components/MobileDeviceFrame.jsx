@@ -86,10 +86,8 @@ export default function MobileDeviceFrame({ children }) {
               <span className="preview-pulse-dot"></span>
               <span className="preview-label">Kural Companion</span>
               <span className="preview-divider">•</span>
-              <span className="preview-sub">Live Mobile Preview</span>
-            </div>
-            <div className="web-preview-hint">
-              <span>↕ Scroll inside phone to navigate</span>
+              <span className="preview-sub">Interactive Mobile View</span>
+              <span className="preview-hint-tag">↕ Scroll inside phone</span>
             </div>
           </header>
 
