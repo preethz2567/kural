@@ -1,4 +1,406 @@
 /* ==========================================================================
+   Realistic Mobile Device Chassis & Web Viewport Mockup
+   ========================================================================== */
+
+/* Outer Web Viewport Wrapper */
+.web-device-wrapper {
+  min-height: 100vh;
+  background-color: var(--bg-body);
+  background-image:
+    radial-gradient(circle at 50% 25%, rgba(242, 166, 191, 0.04) 0%, rgba(26, 24, 29, 0.3) 40%, var(--bg-body) 80%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 16px 20px;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* Web-only Preview Navigation Bar */
+.web-preview-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 416px;
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+
+.web-preview-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(26, 24, 29, 0.85);
+  border: 1px solid var(--border-subtle);
+  border-radius: 9999px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-body);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.preview-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 8px #4ade80;
+  animation: pulsePreviewGlow 2s infinite ease-in-out;
+}
+
+@keyframes pulsePreviewGlow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+.preview-label {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.preview-divider {
+  color: var(--text-muted);
+}
+
+.preview-sub {
+  color: var(--kural-pink);
+  font-weight: 500;
+}
+
+.web-preview-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+/* The Physical Smartphone Chassis */
+.phone-device-chassis {
+  position: relative;
+  width: 412px;
+  height: min(870px, calc(100vh - 68px));
+  background: #151319;
+  border-radius: 54px;
+  padding: 10px;
+  border: 3.5px solid #2e2936;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 0 0 2px #18151e,
+    0 25px 60px -10px rgba(0, 0, 0, 0.85),
+    0 0 45px rgba(242, 166, 191, 0.08);
+}
+
+/* Hardware Side Buttons */
+.phone-hw-btn {
+  position: absolute;
+  background: linear-gradient(to right, #2a2533, #3c3547);
+  border: 1px solid #4a4257;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.phone-hw-mute {
+  left: -7px;
+  top: 105px;
+  width: 4px;
+  height: 26px;
+  border-radius: 3px 0 0 3px;
+  box-shadow: -1px 0 3px rgba(0, 0, 0, 0.5);
+}
+
+.phone-hw-vol-up {
+  left: -7px;
+  top: 150px;
+  width: 4px;
+  height: 48px;
+  border-radius: 3px 0 0 3px;
+  box-shadow: -1px 0 3px rgba(0, 0, 0, 0.5);
+}
+
+.phone-hw-vol-down {
+  left: -7px;
+  top: 210px;
+  width: 4px;
+  height: 48px;
+  border-radius: 3px 0 0 3px;
+  box-shadow: -1px 0 3px rgba(0, 0, 0, 0.5);
+}
+
+.phone-hw-power {
+  right: -7px;
+  top: 160px;
+  width: 4px;
+  height: 72px;
+  border-radius: 0 3px 3px 0;
+  box-shadow: 1px 0 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Speaker Earpiece Slit */
+.phone-speaker-slit {
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 58px;
+  height: 4px;
+  background: #1f1b26;
+  border-radius: 4px;
+  z-index: 50;
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+}
+
+/* The Screen Viewport (Scrollable inside phone) */
+.phone-screen-viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 44px;
+  background-color: var(--bg-body);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  transform: translateZ(0); /* Crucial: confines fixed modals and chat dock to the phone screen */
+}
+
+/* Elegant Slim Custom Scrollbar inside Phone */
+.phone-screen-viewport::-webkit-scrollbar {
+  width: 5px;
+}
+
+.phone-screen-viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.phone-screen-viewport::-webkit-scrollbar-thumb {
+  background: rgba(242, 166, 191, 0.22);
+  border-radius: 10px;
+}
+
+.phone-screen-viewport::-webkit-scrollbar-thumb:hover {
+  background: rgba(242, 166, 191, 0.45);
+}
+
+/* Phone Status Bar with Dynamic Island */
+.phone-status-bar {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  background: rgba(17, 16, 19, 0.90);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  user-select: none;
+}
+
+.phone-status-time {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.2px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  min-width: 38px;
+}
+
+/* Dynamic Island Pill */
+.phone-dynamic-island {
+  width: 108px;
+  height: 25px;
+  background: #000000;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  box-shadow: inset 0 0 1px 1px rgba(255, 255, 255, 0.06);
+}
+
+.island-lens-reflection {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #2a344d, #090e1a);
+  box-shadow: 0 0 2px rgba(66, 153, 225, 0.6);
+}
+
+.island-sensor-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #06060a;
+  border: 1px solid #1a1824;
+}
+
+/* Right Status Icons */
+.phone-status-icons {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #ffffff;
+  min-width: 48px;
+  justify-content: flex-end;
+}
+
+.phone-icon-svg {
+  display: block;
+}
+
+/* Battery Indicator Pill */
+.phone-battery-pill {
+  width: 21px;
+  height: 11px;
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  border-radius: 3px;
+  padding: 1.5px;
+  display: flex;
+  align-items: center;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.phone-battery-level {
+  width: 94%;
+  height: 100%;
+  background: #ffffff;
+  border-radius: 1px;
+}
+
+.phone-battery-terminal {
+  position: absolute;
+  right: -3px;
+  top: 2.5px;
+  width: 1.5px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 0 1px 1px 0;
+}
+
+/* Actual App Content Container */
+.phone-app-content {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Floating Home Indicator Bar */
+.phone-home-indicator-wrap {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 120;
+  height: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  margin-top: -18px;
+}
+
+.phone-home-indicator {
+  width: 128px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 9999px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Adaptations when inside phone screen on Web/Desktop view */
+@media (min-width: 681px) {
+  body {
+    overflow: hidden; /* Prevent double scrollbars on desktop — phone viewport scrolls */
+  }
+
+  .phone-app-content .stitch-mobile-frame {
+    max-width: 100%;
+    min-height: auto;
+    box-shadow: none;
+    padding: 18px 18px 48px;
+  }
+
+  .phone-app-content .stitch-chat-dock {
+    max-width: 100%;
+    border-radius: 0 0 44px 44px;
+    padding-bottom: 22px;
+  }
+
+  .phone-app-content .safe-modal-sheet {
+    border-radius: 28px 28px 44px 44px;
+    max-width: 100%;
+  }
+}
+
+/* Seamless Native Experience on Actual Mobile / Tablet Screens (<= 680px) */
+@media (max-width: 680px) {
+  body {
+    overflow-y: auto;
+  }
+
+  .web-device-wrapper {
+    display: block;
+    min-height: 100%;
+    padding: 0;
+    background: var(--bg-body);
+    background-image: none;
+  }
+
+  .web-preview-header-bar {
+    display: none;
+  }
+
+  .phone-device-chassis {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    min-height: 100vh;
+    border-radius: 0;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    display: block;
+  }
+
+  .phone-hw-btn,
+  .phone-speaker-slit,
+  .phone-status-bar,
+  .phone-home-indicator-wrap {
+    display: none;
+  }
+
+  .phone-screen-viewport {
+    border-radius: 0;
+    overflow: visible;
+    height: auto;
+    min-height: 100vh;
+    transform: none;
+    display: block;
+  }
+
+  .phone-app-content {
+    display: block;
+    width: 100%;
+  }
+}
+
+/* ==========================================================================
    Kural — Stitch Dark Aesthetic Design System
    ========================================================================== */
 
