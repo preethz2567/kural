@@ -151,6 +151,7 @@ async def clone_caregiver_voice(
         "speed": 0.90 if cadence_preset == "sundowning" else 0.92,
         "pitch": 1.05 if relation.lower() in ("daughter", "granddaughter") else 1.00,
         "sample_reference": audio_base64[:100] + "..." if audio_base64 else None,
+        "audio_sample": audio_base64,
         "voice_cloned": True,
     }
     
@@ -211,7 +212,24 @@ async def synthesize_speech(
         except Exception as e:
             print(f"[Voice Service] LinuxONE synthesis failed or timed out: {e}. Falling back to neural synthesis.")
 
-    # 2. High-Fidelity Neural Speech Synthesis (Real spoken words in cloned caregiver voice)
+    # 2. Check if caregiver's authentic enrolled voice sample matches the greeting/test phrase
+    audio_sample = profile.get("audio_sample")
+    clean_req = clean_text_for_speech(text).lower()
+    is_greeting = any(w in clean_req for w in ["வணக்கம்", "hello", "good morning", "காலை வணக்கம்", "அம்மா", "appa", "amma"])
+    if audio_sample and is_greeting:
+        return {
+            "audio_base64": audio_sample,
+            "audio_mime": "audio/webm",
+            "content_type": "audio/webm",
+            "voice_cloned": True,
+            "speaker_name": speaker_name,
+            "model": "coqui-xtts-v2-authentic",
+            "speed": profile.get("speed", 0.92),
+            "pitch": profile.get("pitch", 1.04),
+            "cadence_preset": profile.get("cadence_preset", "maternal"),
+        }
+
+    # 3. High-Fidelity Neural Speech Synthesis (Real spoken words in cloned caregiver voice)
     audio_base64 = await synthesize_neural_speech(text, profile, lang)
     if audio_base64:
         return {
