@@ -17,6 +17,52 @@ function formatTime(isoString) {
   }
 }
 
+function recordDistressTurn(patientId, sessionId, userText, distress) {
+  try {
+    const key = `kural_session_distress_${patientId || 'patient_001'}`
+    const raw = localStorage.getItem(key)
+    const existing = raw ? JSON.parse(raw) : { turns: [] }
+    const updatedTurns = [
+      ...(Array.isArray(existing.turns) ? existing.turns : []),
+      {
+        id: Date.now(),
+        timestamp: new Date().toISOString(),
+        userMessage: userText,
+        level: distress?.level || 'none',
+        matchedKeywords: distress?.matched_keywords || [],
+        reason: distress?.reason || '',
+        escalated: !!distress?.escalated,
+      },
+    ].slice(-40)
+    localStorage.setItem(
+      key,
+      JSON.stringify({
+        lastUpdated: new Date().toISOString(),
+        sessionId,
+        turns: updatedTurns,
+      })
+    )
+  } catch (err) {
+    console.warn('[Session Distress] Failed to record turn:', err)
+  }
+}
+
+function formatReactionNote(distress) {
+  if (!distress || distress.level === 'none') {
+    return 'Reaction: Gentle calm & attentive'
+  }
+  if (distress.level === 'low') {
+    return 'Reaction: Mild reassurance applied'
+  }
+  if (distress.level === 'medium') {
+    return 'Reaction: Grounding cadence applied (confusion noted)'
+  }
+  if (distress.level === 'high') {
+    return 'Reaction: Urgent de-escalation soothe (high distress flagged)'
+  }
+  return 'Reaction: Calm & attentive'
+}
+
 export default function CompanionChat() {
   const navigate = useNavigate()
 
@@ -39,6 +85,7 @@ export default function CompanionChat() {
   const [isMockMode, setIsMockMode] = useState(false)
   const [showSafeZoneModal, setShowSafeZoneModal] = useState(false)
   const [isPlayingFamilyVoice, setIsPlayingFamilyVoice] = useState(false)
+  const [checkInSent, setCheckInSent] = useState(false)
 
   const messagesEndRef = useRef(null)
   const textareaRef = useRef(null)
@@ -137,6 +184,7 @@ export default function CompanionChat() {
       if (data.distress) {
         setLatestDistress(data.distress)
       }
+      recordDistressTurn(activePatientId, sessionId, trimmed, data.distress || { level: 'none' })
 
       const companionMessage = {
         id: 'cmp_' + Date.now(),
@@ -166,12 +214,19 @@ export default function CompanionChat() {
   const handleResetConversation = () => {
     const newId = createSessionId(activePatientId)
     setSessionId(newId)
+    try {
+      localStorage.removeItem(`kural_session_distress_${activePatientId}`)
+    } catch {}
     const preferred = patientData?.preferred_name || patientData?.name || 'Friend'
+    const isTamil = langMode === 'ta' || (patientData?.language && patientData.language.toLowerCase().includes('tamil'))
+    const welcomeText = isTamil
+      ? `வணக்கம், ${preferred}. இன்றைய புதிய உரையாடல் தொடங்கியது. அமைதியாகப் பேசுங்கள், நான் உங்களுடன்தான் இருக்கிறேன்.`
+      : `Hello, ${preferred}. A fresh conversation has started. Tell me whatever is on your heart. I am right here with you.`
     setMessages([
       {
         id: 'welcome_' + Date.now(),
         sender: 'companion',
-        text: `Hello, ${preferred}. A fresh conversation has started. Tell me whatever is on your heart.`,
+        text: welcomeText,
         timestamp: new Date().toISOString(),
         isMock: false,
       },
@@ -612,6 +667,14 @@ export default function CompanionChat() {
             <span className={`sync-pill ${isMockMode ? 'mode-mock' : 'mode-live'}`}>
               {isMockMode ? 'Offline Prototype' : 'Synced with Claude'}
             </span>
+            <button
+              type="button"
+              className="btn-fresh-session"
+              onClick={handleResetConversation}
+              title="Start a fresh conversation and baseline tranquility for today"
+            >
+              🔄 Fresh Day
+            </button>
           </div>
         </div>
 
@@ -655,8 +718,13 @@ export default function CompanionChat() {
                     >
                       🔊 Listen
                     </button>
-                    <div className="bubble-reaction-note">
-                      Reaction noted: <em>Gentle calm and attentive</em>
+                    <div className={`bubble-reaction-note reaction-level-${msg.distress?.level || 'none'}`}>
+                      <span>{formatReactionNote(msg.distress)}</span>
+                      {msg.distress?.matched_keywords?.length > 0 && (
+                        <span className="reaction-trigger-tag">
+                          Triggers: {msg.distress.matched_keywords.join(', ')}
+                        </span>
+                      )}
                     </div>
                   </div>
                 )}
@@ -758,42 +826,59 @@ export default function CompanionChat() {
 
             <div className="safe-metrics-grid">
               <div className="safe-metric-item">
-                <span className="safe-metric-label">Heartbeat Ping</span>
-                <span className="safe-metric-value">2 min ago</span>
+                <span className="safe-metric-label">Verified Location</span>
+                <span className="safe-metric-value">
+                  {patientData?.places_lived?.[0] || patientData?.preferred_address || 'Home Residence'}
+                </span>
               </div>
               <div className="safe-metric-item">
-                <span className="safe-metric-label">Boundary Radius</span>
-                <span className="safe-metric-value">500 meters</span>
+                <span className="safe-metric-label">Safety Status</span>
+                <span className="safe-metric-value text-green">
+                  {backendStatus ? 'Monitored & Active' : 'Active Local Mode'}
+                </span>
               </div>
               <div className="safe-metric-item">
                 <span className="safe-metric-label">Wandering Escalation</span>
-                <span className="safe-metric-value text-green">Active (SMS Alert)</span>
+                <span className={`safe-metric-value ${latestDistress?.level === 'high' ? 'text-amber' : 'text-green'}`}>
+                  {latestDistress?.level === 'high' ? 'High Agitation Flagged' : 'Normal Peace Rhythm'}
+                </span>
               </div>
               <div className="safe-metric-item">
                 <span className="safe-metric-label">Linked Caregiver</span>
-                <span className="safe-metric-value">{caregiverName}</span>
+                <span className="safe-metric-value">
+                  {caregiverName} {caregiverRelation?.relation ? `(${caregiverRelation.relation})` : ''}
+                </span>
               </div>
             </div>
 
-            <div className="safe-modal-actions">
-              <button
-                type="button"
-                className="btn-stitch-primary"
-                onClick={() => {
-                  alert(`Pinging ${caregiverName}: Location confirmed safe at ${patientData?.places_lived?.[0] || 'Home'}.`)
-                  setShowSafeZoneModal(false)
-                }}
-              >
-                Send Location Check-In to {caregiverName}
-              </button>
-              <button
-                type="button"
-                className="btn-stitch-secondary"
-                onClick={() => setShowSafeZoneModal(false)}
-              >
-                Dismiss
-              </button>
-            </div>
+            {checkInSent ? (
+              <div className="safe-checkin-toast">
+                ✓ Check-in dispatched: Location and peace status confirmed for {caregiverName}.
+              </div>
+            ) : (
+              <div className="safe-modal-actions">
+                <button
+                  type="button"
+                  className="btn-stitch-primary"
+                  onClick={() => {
+                    setCheckInSent(true)
+                    setTimeout(() => {
+                      setCheckInSent(false)
+                      setShowSafeZoneModal(false)
+                    }, 1600)
+                  }}
+                >
+                  Send Location Check-In to {caregiverName}
+                </button>
+                <button
+                  type="button"
+                  className="btn-stitch-secondary"
+                  onClick={() => setShowSafeZoneModal(false)}
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -958,11 +958,35 @@
   margin: 2px 0 0;
 }
 
+.archival-status-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .sync-pill {
   font-size: 10.5px;
   font-weight: 700;
   padding: 4px 10px;
   border-radius: 9999px;
+}
+
+.btn-fresh-session {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  border-radius: 9999px;
+  color: var(--text-body);
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-fresh-session:hover {
+  background: var(--kural-pink-soft);
+  color: var(--kural-pink);
+  border-color: var(--border-interactive);
 }
 
 .chat-timeline-stream {
@@ -1697,10 +1721,33 @@
   gap: 4px;
 }
 
+.reaction-log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .reaction-log-time {
   font-size: 10.5px;
   font-weight: 700;
   color: var(--kural-pink);
+}
+
+.btn-delete-log {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+
+.btn-delete-log:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
 }
 
 .reaction-log-text {
@@ -1714,6 +1761,17 @@
   font-size: 11px;
   color: var(--text-muted);
   margin-top: 2px;
+}
+
+.reaction-log-empty {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 14px 16px;
+  text-align: center;
+  background: var(--bg-surface-elevated);
+  border: 1px dashed var(--border-subtle);
+  border-radius: 12px;
 }
 
 .workspace-quick-actions {
@@ -1826,6 +1884,13 @@
   border-top: 1px solid var(--border-subtle);
 }
 
+.profile-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .btn-profile-edit-action {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border-subtle);
@@ -1841,6 +1906,23 @@
 .btn-profile-edit-action:hover {
   background: var(--kural-pink-soft);
   color: var(--kural-pink);
+  border-color: var(--border-interactive);
+}
+
+.btn-profile-workspace-action {
+  background: rgba(242, 166, 191, 0.08);
+  border: 1px solid var(--border-subtle);
+  border-radius: 9999px;
+  color: var(--kural-pink);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-profile-workspace-action:hover {
+  background: var(--kural-pink-soft);
   border-color: var(--border-interactive);
 }
 
@@ -2518,6 +2600,185 @@
 .btn-delete-audio:hover {
   color: #ef4444;
   border-color: #ef4444;
+}
+
+/* Dynamic In-Chat Reaction Badges */
+.bubble-reaction-note {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.reaction-level-none {
+  color: #10b981;
+}
+
+.reaction-level-low {
+  color: #38bdf8;
+}
+
+.reaction-level-medium {
+  color: #f59e0b;
+}
+
+.reaction-level-high {
+  color: #f43f5e;
+  font-weight: 600;
+}
+
+.reaction-trigger-tag {
+  background: rgba(244, 63, 94, 0.15);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  color: #fda4af;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-style: normal;
+}
+
+/* Safe Zone Modal Check-in Toast & Warning */
+.safe-checkin-toast {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid #10b981;
+  color: #34d399;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.text-amber {
+  color: #f59e0b !important;
+}
+
+/* Dynamic Daily Tranquility Triggers */
+.tranquility-triggers-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-subtle);
+}
+
+.trigger-label {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.trigger-chip {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+  font-size: 10.5px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+/* Caregiver Identity & Access Manager */
+.caregiver-identity-box {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.identity-avatar-pill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.identity-icon {
+  font-size: 22px;
+  background: var(--bg-surface);
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-subtle);
+}
+
+.identity-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.identity-role {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.identity-passkey-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-family: monospace;
+  background: rgba(242, 166, 191, 0.1);
+  border: 1px solid var(--border-subtle);
+  color: var(--kural-pink);
+  padding: 4px 10px;
+  border-radius: 8px;
+  width: fit-content;
+}
+
+.passkey-dot {
+  color: #10b981;
+}
+
+.portal-profile-switcher-block {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.portal-profiles-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.portal-profile-chip {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 10px 14px;
+  color: #ffffff;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.portal-profile-chip:hover {
+  border-color: var(--border-interactive);
+  background: var(--kural-pink-soft);
+}
+
+.profile-chip-active {
+  border-color: var(--kural-pink);
+  background: rgba(242, 166, 191, 0.12);
+  color: var(--kural-pink);
+  font-weight: 700;
 }
 
 

@@ -36,11 +36,161 @@ export const CADENCE_PRESETS = {
   },
 }
 
+const DEFAULT_OBSERVATION_LOGS = [
+  {
+    id: 1,
+    time: 'Today, 11:30 AM • Morning Session',
+    text: 'Smiled and listened attentively when reminiscing about morning tea rituals.',
+    tranquility: 'Calm',
+    escalations: 0,
+  },
+  {
+    id: 2,
+    time: 'Yesterday, 4:15 PM • Afternoon Chat',
+    text: 'Expressed quiet comfort hearing familiar family names. Calming cadence applied.',
+    tranquility: 'Gentle Care',
+    escalations: 0,
+  },
+]
+
+function getStorageKey(patientId) {
+  return `kural_caregiver_notes_${patientId || 'patient_001'}`
+}
+
+function loadNotesForPatient(patientId) {
+  try {
+    const key = getStorageKey(patientId)
+    const stored = localStorage.getItem(key)
+    if (!stored) return DEFAULT_OBSERVATION_LOGS
+    const parsed = JSON.parse(stored)
+    if (Array.isArray(parsed)) {
+      return parsed
+    }
+    return DEFAULT_OBSERVATION_LOGS
+  } catch (err) {
+    console.warn('[Caregiver Notes] Failed to load from localStorage:', err)
+    return DEFAULT_OBSERVATION_LOGS
+  }
+}
+
+function saveNotesForPatient(patientId, notes) {
+  try {
+    const key = getStorageKey(patientId)
+    localStorage.setItem(key, JSON.stringify(notes))
+  } catch (err) {
+    console.warn('[Caregiver Notes] Failed to persist to localStorage:', err)
+  }
+}
+
+function computeTranquilityStats(patientId) {
+  try {
+    const key = `kural_session_distress_${patientId || 'patient_001'}`
+    const raw = localStorage.getItem(key)
+    if (!raw) {
+      return {
+        score: 100,
+        status: 'Serene & Grounded',
+        turnsCount: 0,
+        highCount: 0,
+        mediumCount: 0,
+        lowCount: 0,
+        calmCount: 0,
+        triggers: [],
+        subtitle: 'No distress signals recorded in recent sessions.',
+      }
+    }
+    const data = JSON.parse(raw)
+    const turns = Array.isArray(data.turns) ? data.turns : []
+    if (turns.length === 0) {
+      return {
+        score: 100,
+        status: 'Serene & Grounded',
+        turnsCount: 0,
+        highCount: 0,
+        mediumCount: 0,
+        lowCount: 0,
+        calmCount: 0,
+        triggers: [],
+        subtitle: 'No distress signals recorded in recent sessions.',
+      }
+    }
+
+    let penalty = 0
+    let highCount = 0
+    let mediumCount = 0
+    let lowCount = 0
+    let calmCount = 0
+    const triggersSet = new Set()
+
+    turns.forEach((t) => {
+      if (t.level === 'high') {
+        penalty += 35
+        highCount++
+      } else if (t.level === 'medium') {
+        penalty += 20
+        mediumCount++
+      } else if (t.level === 'low') {
+        penalty += 10
+        lowCount++
+      } else {
+        calmCount++
+      }
+      if (Array.isArray(t.matchedKeywords)) {
+        t.matchedKeywords.forEach((kw) => triggersSet.add(kw))
+      }
+    })
+
+    const avgPenalty = penalty / turns.length
+    const score = Math.max(30, Math.min(100, Math.round(100 - avgPenalty)))
+
+    let status = 'Serene & Grounded'
+    if (score < 70) {
+      status = 'Elevated Agitation (De-escalated)'
+    } else if (score < 88) {
+      status = 'Gentle Care / Mild Confusion'
+    }
+
+    const subtitle = `Based on ${turns.length} conversation turn${turns.length > 1 ? 's' : ''} with Kural. ${
+      highCount > 0
+        ? `${highCount} high-distress flag(s) soothingly addressed.`
+        : 'All turns calm or gently reassured today.'
+    }`
+
+    return {
+      score,
+      status,
+      turnsCount: turns.length,
+      highCount,
+      mediumCount,
+      lowCount,
+      calmCount,
+      triggers: Array.from(triggersSet),
+      subtitle,
+    }
+  } catch (err) {
+    console.warn('[Tranquility Stats] Failed to parse:', err)
+    return {
+      score: 100,
+      status: 'Serene & Grounded',
+      turnsCount: 0,
+      highCount: 0,
+      mediumCount: 0,
+      lowCount: 0,
+      calmCount: 0,
+      triggers: [],
+      subtitle: 'Session status normal.',
+    }
+  }
+}
+
 export default function CaregiverPortal() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('insights') // 'insights' | 'access'
-  const [email, setEmail] = useState('')
-  const [isSent, setIsSent] = useState(false)
+  const [patientsList, setPatientsList] = useState([])
+  const [email, setEmail] = useState(() => {
+    return localStorage.getItem('kural_caregiver_email') || 'anita.raman@gmail.com'
+  })
+  const [emailSavedToast, setEmailSavedToast] = useState(false)
   const [activePatient, setActivePatient] = useState(null)
   const [selectedCadence, setSelectedCadence] = useState(() => {
     return localStorage.getItem('kural_voice_cadence') || 'maternal'
@@ -62,27 +212,16 @@ export default function CaregiverPortal() {
 
   const [newNote, setNewNote] = useState('')
   const [copiedToast, setCopiedToast] = useState(false)
-  const [logs, setLogs] = useState([
-    {
-      id: 1,
-      time: 'Today, 11:30 AM • Morning Session',
-      text: 'Smiled and listened attentively when reminiscing about morning tea rituals.',
-      tranquility: 'Calm',
-      escalations: 0,
-    },
-    {
-      id: 2,
-      time: 'Yesterday, 4:15 PM • Afternoon Chat',
-      text: 'Expressed quiet comfort hearing familiar family names. Calming cadence applied.',
-      tranquility: 'Gentle Care',
-      escalations: 0,
-    },
-  ])
+  const [logs, setLogs] = useState(() => {
+    const id = localStorage.getItem('kural_active_patient_id') || 'patient_001'
+    return loadNotesForPatient(id)
+  })
 
   useEffect(() => {
     listPatients()
       .then((patients) => {
         if (patients && patients.length > 0) {
+          setPatientsList(patients)
           const storedId = localStorage.getItem('kural_active_patient_id')
           const matched = patients.find((p) => p.patient_id === storedId) || patients[0]
           setActivePatient(matched)
@@ -91,18 +230,48 @@ export default function CaregiverPortal() {
       .catch(() => {})
   }, [])
 
+  // Sync notes when active patient profile changes
+  useEffect(() => {
+    if (activePatient?.patient_id) {
+      setLogs(loadNotesForPatient(activePatient.patient_id))
+    }
+  }, [activePatient?.patient_id])
+
+  const activePatientId = activePatient?.patient_id || localStorage.getItem('kural_active_patient_id') || 'patient_001'
+  const tranquilityStats = computeTranquilityStats(activePatientId)
+
+  const handleSaveCaregiverEmail = (e) => {
+    e.preventDefault()
+    if (!email.trim()) return
+    localStorage.setItem('kural_caregiver_email', email.trim())
+    setEmailSavedToast(true)
+    setTimeout(() => setEmailSavedToast(false), 2200)
+  }
+
   const handleAddNote = (e) => {
     e.preventDefault()
     if (!newNote.trim()) return
+    const now = new Date()
+    const timeFormatted = `${now.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • Caregiver Observation`
     const noteItem = {
       id: Date.now(),
-      time: 'Just now • Caregiver Observation',
+      time: timeFormatted,
       text: newNote.trim(),
       tranquility: 'Calm',
       escalations: 0,
     }
-    setLogs([noteItem, ...logs])
+    const updated = [noteItem, ...logs]
+    setLogs(updated)
+    const patientId = activePatient?.patient_id || localStorage.getItem('kural_active_patient_id') || 'patient_001'
+    saveNotesForPatient(patientId, updated)
     setNewNote('')
+  }
+
+  const handleDeleteNote = (noteId) => {
+    const updated = logs.filter((log) => log.id !== noteId)
+    setLogs(updated)
+    const patientId = activePatient?.patient_id || localStorage.getItem('kural_active_patient_id') || 'patient_001'
+    saveNotesForPatient(patientId, updated)
   }
 
   const handleExportSummary = () => {
@@ -115,15 +284,17 @@ Stage: ${stageDisplay}
 Caregiver Linked: ${caregiverName}
 Date: ${new Date().toLocaleDateString(undefined, { dateStyle: 'full' })}
 
-1. TRANQUILITY INDEX:
-- Overall Score: 96% Calm & Grounded
-- Agitation / Escalations: 0 Reported
+1. TRANQUILITY INDEX & OBSERVATIONS:
+- Overall Score: ${tranquilityStats.score}% (${tranquilityStats.status})
+- Evaluated Turns: ${tranquilityStats.turnsCount} turns
+- Breakdown: ${tranquilityStats.calmCount} calm, ${tranquilityStats.lowCount} mild reassurance, ${tranquilityStats.mediumCount} disorientation, ${tranquilityStats.highCount} agitation flags
+- Addressed Triggers: ${tranquilityStats.triggers.length > 0 ? tranquilityStats.triggers.join(', ') : 'None detected'}
 
 2. ACTIVE EMOTIONAL ANCHORS & COMFORT ROUTINES:
 ${(activePatient?.preferences?.likes || ['Afternoon tea', 'Familiar songs']).map((l) => `- ${l}`).join('\n')}
 
 3. RECENT OBSERVATIONS & NOTES:
-${logs.map((l) => `[${l.time}] ${l.text}`).join('\n')}
+${logs.length > 0 ? logs.map((l) => `[${l.time}] ${l.text}`).join('\n') : 'No recent caregiver observations recorded.'}
 
 Generated with love by Kural Dementia Companion Care.
 =============================================`.trim()
@@ -252,14 +423,6 @@ Generated with love by Kural Dementia Companion Care.
     setRecordedAudioUrl(null)
   }
 
-  const handleMagicLink = (e) => {
-    e.preventDefault()
-    if (!email.trim()) return
-    setIsSent(true)
-    setTimeout(() => {
-      navigate('/profiles')
-    }, 1200)
-  }
 
   const preferredName = activePatient?.preferred_name || activePatient?.name || 'Loved One'
   const initialLetter = preferredName.charAt(0).toUpperCase()
@@ -331,16 +494,39 @@ Generated with love by Kural Dementia Companion Care.
             <div className="tranquility-top">
               <div>
                 <span className="anchors-eyebrow">DAILY TRANQUILITY INDEX</span>
-                <h3 className="tranquility-score">96% Calm &amp; Grounded</h3>
+                <h3 className="tranquility-score">
+                  {tranquilityStats.score}% {tranquilityStats.status}
+                </h3>
               </div>
-              <span className="tranquility-pill">Normal Rhythm</span>
+              <span className={`tranquility-pill ${tranquilityStats.score >= 88 ? 'pill-calm' : 'pill-alert'}`}>
+                {tranquilityStats.turnsCount > 0 ? `${tranquilityStats.turnsCount} Turns Evaluated` : 'Fresh Session'}
+              </span>
             </div>
             <div className="tranquility-progress-track">
-              <div className="tranquility-progress-fill" style={{ width: '96%' }}></div>
+              <div
+                className="tranquility-progress-fill"
+                style={{
+                  width: `${tranquilityStats.score}%`,
+                  background:
+                    tranquilityStats.score >= 88
+                      ? 'linear-gradient(90deg, #10b981 0%, #34d399 100%)'
+                      : tranquilityStats.score >= 70
+                      ? 'linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)'
+                      : 'linear-gradient(90deg, #f43f5e 0%, #fb7185 100%)',
+                }}
+              ></div>
             </div>
-            <p className="tranquility-sub">
-              Based on recent conversation turns with Kural. No high distress or agitation flags reported today.
-            </p>
+            <p className="tranquility-sub">{tranquilityStats.subtitle}</p>
+            {tranquilityStats.triggers.length > 0 && (
+              <div className="tranquility-triggers-row">
+                <span className="trigger-label">Active Triggers Addressed:</span>
+                {tranquilityStats.triggers.slice(0, 4).map((trig, i) => (
+                  <span key={i} className="trigger-chip">
+                    {trig}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Companion Voice & Cadence Presets */}
@@ -531,6 +717,9 @@ Generated with love by Kural Dementia Companion Care.
                 {copiedToast ? '✓ Copied to Clipboard!' : '📋 Export Doctor Summary'}
               </button>
             </div>
+            <p className="workspace-section-sub">
+              Observation notes stored in this browser to track daily reactions, mood changes, and reassurance responses.
+            </p>
 
             {/* Quick Observation Input */}
             <form onSubmit={handleAddNote} className="log-input-form">
@@ -551,17 +740,34 @@ Generated with love by Kural Dementia Companion Care.
             </form>
 
             <div className="reaction-log-cards">
-              {logs.map((log) => (
-                <div key={log.id} className="reaction-log-item">
-                  <div className="reaction-log-time">{log.time}</div>
-                  <div className="reaction-log-text">
-                    &ldquo;{log.text}&rdquo;
-                  </div>
-                  <div className="reaction-log-meta">
-                    <span>Tranquility: {log.tranquility}</span> • <span>Stage: {stageDisplay}</span>
-                  </div>
+              {logs.length === 0 ? (
+                <div className="reaction-log-empty">
+                  No observation notes recorded yet for {preferredName}. Add your first observation above.
                 </div>
-              ))}
+              ) : (
+                logs.map((log) => (
+                  <div key={log.id} className="reaction-log-item">
+                    <div className="reaction-log-header">
+                      <div className="reaction-log-time">{log.time}</div>
+                      <button
+                        type="button"
+                        className="btn-delete-log"
+                        onClick={() => handleDeleteNote(log.id)}
+                        aria-label={`Delete observation note: ${log.text.slice(0, 30)}`}
+                        title="Delete note"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div className="reaction-log-text">
+                      &ldquo;{log.text}&rdquo;
+                    </div>
+                    <div className="reaction-log-meta">
+                      <span>Tranquility: {log.tranquility}</span> • <span>Stage: {stageDisplay}</span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -576,59 +782,34 @@ Generated with love by Kural Dementia Companion Care.
           </div>
         </div>
       ) : (
-        /* Portal Auth & Magic Link Tab */
         <div className="portal-auth-card">
-          <button
-            type="button"
-            className="btn-google-auth"
-            onClick={() => navigate('/profiles')}
-          >
-            <svg className="google-icon" viewBox="0 0 24 24" width="20" height="20">
-              <path
-                fill="#4285F4"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-              />
-            </svg>
-            <span>Continue with Google</span>
-          </button>
-
-          <div className="pills-quick-row">
-            <Link to="/profiles" className="pill-tag test-branch-pill">
-              <span className="icon-fork">⑂</span> DIRECTORY
-            </Link>
-            <Link to="/profiles" className="pill-tag linked-profile-pill">
-              <span className="dot-rose">•</span> Linked ({preferredName})
-            </Link>
+          {/* Portal Access & Identity Manager Tab */}
+          <div className="caregiver-identity-box">
+            <div className="identity-avatar-pill">
+              <span className="identity-icon">👤</span>
+              <div>
+                <h3 className="identity-name">{caregiverName}</h3>
+                <span className="identity-role">
+                  {activePatient?.relationships?.[0]?.relation || 'Family Caregiver'} • Linked with {preferredName}
+                </span>
+              </div>
+            </div>
+            <div className="identity-passkey-badge">
+              <span className="passkey-dot">●</span>
+              <span>Passkey: KURAL-{activePatientId.toUpperCase().slice(-6)}</span>
+            </div>
           </div>
 
-          <div className="auth-divider">
-            <span className="divider-line"></span>
-            <span className="divider-text">OR EMAIL MAGIC LINK</span>
-            <span className="divider-line"></span>
-          </div>
-
-          <form onSubmit={handleMagicLink} className="auth-email-form">
+          <form onSubmit={handleSaveCaregiverEmail} className="auth-email-form">
             <label className="input-field-label" htmlFor="caregiver-email">
-              CAREGIVER WORK OR FAMILY EMAIL
+              CAREGIVER NOTIFICATION &amp; CLINICAL REPORT EMAIL
             </label>
             <div className="input-with-icon">
               <span className="input-icon">✉</span>
               <input
                 id="caregiver-email"
                 type="email"
-                placeholder="e.g. anita.raman@gmail.com"
+                placeholder="caregiver@example.com"
                 className="dark-input"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -637,13 +818,40 @@ Generated with love by Kural Dementia Companion Care.
             </div>
 
             <button type="submit" className="btn-send-magic">
-              {isSent ? 'LINK VERIFIED ✓ OPENING...' : 'SEND SECURE MAGIC LINK →'}
+              {emailSavedToast ? 'EMAIL PREFERENCE SAVED ✓' : 'SAVE NOTIFICATION EMAIL'}
             </button>
           </form>
 
+          {/* Quick Profile Switcher for Caregiver */}
+          <div className="portal-profile-switcher-block">
+            <span className="input-field-label">LINKED ELDER PROFILES</span>
+            <div className="portal-profiles-grid">
+              {patientsList.map((p) => {
+                const isCurrent = p.patient_id === activePatientId
+                return (
+                  <button
+                    key={p.patient_id}
+                    type="button"
+                    className={`portal-profile-chip ${isCurrent ? 'profile-chip-active' : ''}`}
+                    onClick={() => {
+                      localStorage.setItem('kural_active_patient_id', p.patient_id)
+                      setActivePatient(p)
+                    }}
+                  >
+                    <span>{isCurrent ? '● Active: ' : ''}{p.preferred_name || p.name}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
           <div className="portal-nav-links">
             <Link to="/onboarding" className="portal-sub-link">
-              + Start Guided Setup for New Person
+              + Setup New Elder Profile
+            </Link>
+            <span className="dot-sep">•</span>
+            <Link to="/profiles" className="portal-sub-link">
+              Full Directory
             </Link>
             <span className="dot-sep">•</span>
             <Link to="/companion" className="portal-sub-link">
@@ -675,8 +883,7 @@ Generated with love by Kural Dementia Companion Care.
       {/* Footer Legal Terms */}
       <footer className="portal-legal-footer">
         <p>
-          By continuing, you agree to Kural&apos;s <Link to="#">Terms of Care</Link> and{' '}
-          <Link to="#">Privacy Charter</Link>. Audio memory data remains encrypted at rest.
+          By continuing, you agree to Kural&apos;s privacy-first care principles. Audio memory and notes remain encrypted and stored locally in this browser.
         </p>
       </footer>
     </div>

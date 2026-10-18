@@ -30,6 +30,8 @@ export default function Onboarding() {
     calming_strategies_str: '',
     cherished_memories_str: '',
     caregiver_notes: '',
+    caregiver_name: '',
+    caregiver_relation: 'daughter',
   })
 
   // Prefill existing profile if editing
@@ -58,6 +60,8 @@ export default function Onboarding() {
           calming_strategies_str: (p.calming_strategies || []).join('\n'),
           cherished_memories_str: (p.cherished_memories || []).join('\n'),
           caregiver_notes: p.caregiver_notes || '',
+          caregiver_name: p.relationships?.[0]?.name || '',
+          caregiver_relation: p.relationships?.[0]?.relation || 'daughter',
         })
       })
       .catch((err) => {
@@ -130,6 +134,16 @@ export default function Onboarding() {
       calming_strategies: formData.calming_strategies_str.split('\n').map((s) => s.trim()).filter(Boolean),
       cherished_memories: formData.cherished_memories_str.split('\n').map((s) => s.trim()).filter(Boolean),
       caregiver_notes: formData.caregiver_notes.trim() || null,
+      relationships: formData.caregiver_name.trim()
+        ? [
+            {
+              name: formData.caregiver_name.trim(),
+              relation: formData.caregiver_relation.trim() || 'caregiver',
+              status: 'living',
+              notes: 'Primary family caregiver',
+            },
+          ]
+        : undefined,
     }
 
     try {
@@ -287,6 +301,48 @@ export default function Onboarding() {
                     value={formData.profession}
                     onChange={(e) => handleChange('profession', e.target.value)}
                   />
+                </div>
+              </div>
+
+              <div style={{ margin: '18px 0 14px', borderTop: '1px dashed var(--border-subtle)' }}></div>
+              <span className="section-eyebrow">LINKED FAMILY CAREGIVER</span>
+              <p className="onboarding-desc" style={{ fontSize: '12px', marginBottom: '12px' }}>
+                Who will be the primary family anchor and reassurance voice for {formData.preferred_name || formData.name || 'this loved one'}?
+              </p>
+
+              <div className="form-row-2">
+                <div className="form-group">
+                  <label className="form-label" htmlFor="caregiver_name">
+                    Caregiver Name
+                  </label>
+                  <input
+                    id="caregiver_name"
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. Clara Vance, Anita Raman"
+                    value={formData.caregiver_name}
+                    onChange={(e) => handleChange('caregiver_name', e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="caregiver_relation">
+                    Relationship
+                  </label>
+                  <select
+                    id="caregiver_relation"
+                    className="form-select"
+                    value={formData.caregiver_relation}
+                    onChange={(e) => handleChange('caregiver_relation', e.target.value)}
+                  >
+                    <option value="daughter">Daughter</option>
+                    <option value="son">Son</option>
+                    <option value="spouse">Spouse / Partner</option>
+                    <option value="grandchild">Grandchild</option>
+                    <option value="sibling">Sister / Brother</option>
+                    <option value="friend">Friend / Relative</option>
+                    <option value="caregiver">Professional Caregiver</option>
+                  </select>
                 </div>
               </div>
 

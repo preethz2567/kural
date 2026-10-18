@@ -216,17 +216,32 @@ export default function ProfileList() {
                 </div>
 
                 <div className="profile-card-actions-footer">
-                  <button
-                    type="button"
-                    className="btn-profile-edit-action"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      navigate(`/onboarding?edit=${p.patient_id}`)
-                    }}
-                    title="Edit profile details, anchors, and memories"
-                  >
-                    ✏️ Edit Profile
-                  </button>
+                  <div className="profile-actions-left">
+                    <button
+                      type="button"
+                      className="btn-profile-edit-action"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        navigate(`/onboarding?edit=${p.patient_id}`)
+                      }}
+                      title="Edit profile details, anchors, and memories"
+                    >
+                      ✏️ Edit
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn-profile-workspace-action"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        localStorage.setItem('kural_active_patient_id', p.patient_id)
+                        navigate('/caregiver')
+                      }}
+                      title="Open Caregiver Workspace, voice greeting, and observation notes"
+                    >
+                      📊 Workspace
+                    </button>
+                  </div>
 
                   <button
                     type="button"
