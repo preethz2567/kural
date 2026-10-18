@@ -1,13 +1,17 @@
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Ensure the backend directory is in sys.path so internal imports (routers, models, services, store, prompts)
-# succeed whether started from repository root (uvicorn backend.main:app) or backend/ (uvicorn main:app)
+# Ensure the backend directory is in sys.path so internal imports succeed
 backend_dir = Path(__file__).resolve().parent
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
+
+# Explicitly load .env from backend/ directory and project root
+load_dotenv(backend_dir / ".env")
+load_dotenv(backend_dir.parent / ".env")
 
 from routers import patient, chat, voice
 

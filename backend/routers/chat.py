@@ -17,15 +17,16 @@ from services.prompt_builder import build_system_prompt
 from services.distress_detector import score_distress, handle_escalation
 from services import voice_service
 
-load_dotenv()
+load_dotenv(backend_dir / ".env")
+load_dotenv(backend_dir.parent / ".env")
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
-# Read model identifier from environment variable; defaults to a known valid Claude model
-ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022")
-api_key = os.getenv("ANTHROPIC_API_KEY")
+# Read model identifier and API key from environment with quotes/whitespace stripped
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022").strip().strip('"').strip("'")
+api_key = (os.getenv("ANTHROPIC_API_KEY") or "").strip().strip('"').strip("'") or None
 
-# Non-blocking async Anthropic client if API key is provided
+# Non-blocking async Anthropic client if API key is provided; tests can monkeypatch client to None
 client = anthropic.AsyncAnthropic(api_key=api_key) if api_key else None
 
 class ChatRequest(BaseModel):
