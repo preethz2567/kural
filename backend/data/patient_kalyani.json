@@ -1,0 +1,34 @@
+{
+  "patient_id": "patient_kalyani",
+  "name": "Kalyani Raman",
+  "preferred_name": "Amma",
+  "other_nicknames": ["Kalyani Amma"],
+  "stage": "mid",
+  "age_range": "70-79",
+  "profession": "Carnatic music teacher & homemaker",
+  "places_lived": ["Mylapore, Chennai", "Coimbatore"],
+  "education": ["Madras Music Academy"],
+  "relationships": [
+    { "name": "Meera", "relation": "daughter", "status": "living", "notes": "Calls every evening at 6 PM" },
+    { "name": "Raman", "relation": "husband", "status": "deceased", "notes": "Loved morning walks around Kapaleeshwarar temple" }
+  ],
+  "significant_events": [
+    "Sang at the Mylapore Music Season festival in 1982",
+    "Taught over 50 students vocal music in her home veranda"
+  ],
+  "preferences": {
+    "likes": ["Mylapore garden white jasmine (Malligai)", "Brass davarah filter coffee at 7 AM", "Morning ragas with steamed idlis", "Kurai Onrum Illai song in Ragam Sivaranjani"],
+    "dislikes": ["loud sudden honking", "cold tea", "busy unfamiliar crowds"]
+  },
+  "calming_strategies": [
+    "Hum the melody of Kurai Onrum Illai together",
+    "Remind her of the quiet morning veranda and aroma of fresh filter coffee",
+    "Mention her daughter Meera is safe and will visit this weekend"
+  ],
+  "cherished_memories": [
+    "Singing Ragam Sivaranjani in the morning veranda",
+    "Tending white night-blooming jasmine flowers in the old Mylapore garden",
+    "Drinking morning filter coffee from the warm brass davarah with Raman"
+  ],
+  "caregiver_notes": "Speaks gently in English and Tamil. Responds with warm smiles when hearing about morning coffee or family ragas."
+}

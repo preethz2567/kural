@@ -50,7 +50,7 @@ export default function CompanionChat() {
       try {
         const patient = await fetchPatient(activePatientId, { signal: controller.signal })
         setPatientData(patient)
-        const preferred = patient.preferred_name || patient.name || 'Amma'
+        const preferred = patient.preferred_name || patient.name || 'Friend'
         setMessages([
           {
             id: 'welcome_' + Date.now(),
@@ -142,7 +142,7 @@ export default function CompanionChat() {
   const handleResetConversation = () => {
     const newId = createSessionId(activePatientId)
     setSessionId(newId)
-    const preferred = patientData?.preferred_name || patientData?.name || 'Amma'
+    const preferred = patientData?.preferred_name || patientData?.name || 'Friend'
     setMessages([
       {
         id: 'welcome_' + Date.now(),
@@ -156,8 +156,75 @@ export default function CompanionChat() {
     setError(null)
   }
 
-  const preferredName = patientData?.preferred_name || patientData?.name || 'Amma'
-  const stageDisplay = patientData?.stage ? `${patientData.stage.charAt(0).toUpperCase() + patientData.stage.slice(1)} Stage` : 'Mild Cognitive Impairment'
+  const preferredName = patientData?.preferred_name || patientData?.name || 'Friend'
+  const stageDisplay = patientData?.stage && patientData.stage !== 'unknown'
+    ? `${patientData.stage.charAt(0).toUpperCase() + patientData.stage.slice(1)} Stage`
+    : 'Stage Adaptive'
+
+  // Dynamic caregiver link name based on actual relationships in the profile
+  const caregiverRelation = patientData?.relationships?.[0]
+  const caregiverName = caregiverRelation ? caregiverRelation.name : 'Caregiver'
+
+  // Dynamically build emotional anchors from the actual patient data
+  const dynamicAnchors = []
+
+  // 1. Cherished memories
+  if (patientData?.cherished_memories && patientData.cherished_memories.length > 0) {
+    patientData.cherished_memories.slice(0, 2).forEach((mem, idx) => {
+      dynamicAnchors.push({
+        type: 'Cherished Memory',
+        category: 'Anchor',
+        icon: idx === 0 ? '🌸' : '🕊️',
+        title: mem.length > 28 ? mem.slice(0, 26) + '...' : mem,
+        subtitle: patientData.places_lived?.[0] || 'Treasured Memory',
+        tag: idx === 0 ? 'Comfort Routine' : 'Beloved Moment',
+        snippet: mem,
+        prompt: `Tell me about this peaceful memory: ${mem}.`,
+      })
+    })
+  }
+
+  // 2. Preferences likes
+  if (patientData?.preferences?.likes && patientData.preferences.likes.length > 0) {
+    patientData.preferences.likes.slice(0, 2).forEach((like, idx) => {
+      dynamicAnchors.push({
+        type: 'Sensory Comfort',
+        category: idx === 0 ? 'Daily Cadence' : 'Auditory',
+        icon: idx === 0 ? '☕' : '🎶',
+        title: like.length > 25 ? like.slice(0, 23) + '...' : like,
+        subtitle: 'Familiar Comfort',
+        tag: `Loves ${like.split(' ')[0]}`,
+        snippet: `A comforting and familiar joy in ${preferredName}'s day.`,
+        prompt: `Can we talk about ${like}? It brings so much warmth and peace to remember.`,
+      })
+    })
+  }
+
+  // Fallback anchors if profile has no custom data yet
+  if (dynamicAnchors.length === 0) {
+    dynamicAnchors.push(
+      {
+        type: 'Familiar Moment',
+        category: 'Anchor',
+        icon: '🌸',
+        title: 'Afternoon Tea',
+        subtitle: 'Quiet Comfort',
+        tag: 'Daily Ritual',
+        snippet: 'A warm, unhurried cup of tea in the afternoon.',
+        prompt: 'I would love to have a quiet cup of tea and chat about the afternoon sunshine.',
+      },
+      {
+        type: 'Sensory Comfort',
+        category: 'Auditory',
+        icon: '🎶',
+        title: 'Calming Melody',
+        subtitle: 'Music & Song',
+        tag: 'Peaceful Melody',
+        snippet: 'A gentle song that brings security and reassurance.',
+        prompt: 'What is a calming memory or song we can think about together?',
+      }
+    )
+  }
 
   return (
     <div className="stitch-mobile-frame stitch-companion-frame">
@@ -172,7 +239,7 @@ export default function CompanionChat() {
             <span className="brand-kural">KURAL</span>
           </div>
           <span className="header-divider-v">|</span>
-          <span className="chat-header-sub">Family Connection</span>
+          <span className="chat-header-sub">Companion Session</span>
         </div>
 
         <div className="chat-header-person">
@@ -188,18 +255,22 @@ export default function CompanionChat() {
             onClick={() => navigate('/profiles')}
             title="Switch profile"
           >
-            <img src="/amma_hero.png" alt="Amma" className="header-avatar-img" />
+            <div className="header-avatar-initial">
+              {preferredName.charAt(0).toUpperCase()}
+            </div>
           </button>
         </div>
       </header>
 
-      {/* Intergenerational Link Banner */}
+      {/* Intergenerational Link Banner (Dynamic) */}
       <div className="intergenerational-pill-row">
         <div className="intergenerational-left">
           <span className="heart-circle-dark">♥</span>
           <div>
-            <div className="intergenerational-eyebrow">INTERGENERATIONAL LINK</div>
-            <div className="intergenerational-names">Meera &amp; {preferredName}</div>
+            <div className="intergenerational-eyebrow">LINKED COMPANION SESSION</div>
+            <div className="intergenerational-names">
+              {caregiverName} &amp; {preferredName}
+            </div>
           </div>
         </div>
         <button
@@ -207,7 +278,7 @@ export default function CompanionChat() {
           className="btn-status-pill"
           onClick={() => navigate('/profiles')}
         >
-          ● Switch Profile
+          ● Switch Person
         </button>
       </div>
 
@@ -218,22 +289,23 @@ export default function CompanionChat() {
           Small messages can become familiar, reassuring moments in their day.
         </p>
 
-        {/* Hero Card Container */}
+        {/* Dynamic Portrait Hero Card */}
         <div className="hero-portrait-card">
-          <img
-            src="/amma_hero.png"
-            alt="Family holding hands warmly"
-            className="hero-portrait-image"
-          />
+          <div className="hero-portrait-placeholder">
+            <span className="hero-giant-initial">{preferredName.charAt(0).toUpperCase()}</span>
+            <span className="hero-person-fullname">{patientData?.name || preferredName}</span>
+          </div>
           <div className="portrait-overlay-strip">
             <div className="overlay-person-badge">
-              <img src="/amma_hero.png" alt="Amma" className="overlay-mini-avatar" />
+              <div className="overlay-mini-avatar">
+                {preferredName.charAt(0).toUpperCase()}
+              </div>
               <div>
                 <div className="overlay-name-row">
                   <span className="overlay-name">{preferredName}</span>
                   <span className="connected-chip">• Connected</span>
                 </div>
-                <div className="overlay-stage">{stageDisplay} (Stage Adaptive)</div>
+                <div className="overlay-stage">{stageDisplay}</div>
               </div>
             </div>
             <button
@@ -248,116 +320,68 @@ export default function CompanionChat() {
         </div>
       </section>
 
-      {/* Kural Suggestion Compass Card */}
+      {/* Kural Suggestion Compass Card (Dynamic) */}
       <section className="kural-suggestion-card">
         <div className="suggestion-top-row">
           <span className="suggestion-badge">✪ KURAL&apos;S SUGGESTION</span>
-          <span className="compass-pill">Stage Compass</span>
+          <span className="compass-pill">{stageDisplay}</span>
         </div>
         <h2 className="suggestion-heading">A little guidance for today</h2>
         <p className="suggestion-body">
-          &ldquo;A calm voice and familiar topics can make conversations feel easier. Mention today&apos;s weather, family names, or simple afternoon tea rituals.&rdquo;
+          {patientData?.preferences?.likes?.length > 0
+            ? `“A calm voice and familiar topics can make conversations feel easier. Mention ${patientData.preferences.likes.slice(0, 2).join(' or ')}, family memories, or afternoon rituals.”`
+            : `“A calm voice and familiar topics can make conversations feel easier. Mention today's weather, family names, or simple afternoon tea rituals.”`}
         </p>
         <div className="suggestion-footer-row">
-          <span className="suggestion-recap-text">Integrated into companion pacing</span>
+          <span className="suggestion-recap-text">Tuned for {preferredName}</span>
           <button
             type="button"
             className="apply-prompt-btn"
-            onClick={() => handleSend("Tell me about a peaceful morning, sipping warm tea and listening to gentle music.")}
+            onClick={() =>
+              handleSend(
+                patientData?.preferences?.likes?.[0]
+                  ? `Tell me about ${patientData.preferences.likes[0]}. It always brings such comfort and peace to think about.`
+                  : "Tell me about a peaceful morning, sipping warm tea and listening to quiet sounds."
+              )
+            }
           >
             Apply prompt ↗
           </button>
         </div>
       </section>
 
-      {/* Emotional Anchors Grid (Direct from Stitch Reference 2) */}
+      {/* Emotional Anchors Grid (Dynamic based on selected profile) */}
       <section className="emotional-anchors-section">
         <div className="anchors-header-block">
           <span className="anchors-eyebrow">EMOTIONAL ANCHORS</span>
-          <h2 className="anchors-title">Little things they know by heart.</h2>
+          <h2 className="anchors-title">Little things {preferredName} knows by heart.</h2>
           <p className="anchors-sub">
-            Familiar anchors that comfort them. Tap any card to attach into conversation.
+            Familiar anchors from {preferredName}&apos;s profile that comfort them. Tap any card to attach to conversation.
           </p>
         </div>
 
         <div className="anchors-grid">
-          {/* Card 1: Morning Ritual */}
-          <div
-            className="anchor-card"
-            onClick={() => handleSend("Tell me about listening to morning ragas and having warm breakfast together.")}
-            role="button"
-            tabIndex={0}
-          >
-            <div className="anchor-card-top">
-              <img src="/amma_hero.png" alt="Morning" className="anchor-img-thumb" />
+          {dynamicAnchors.map((anchor, index) => (
+            <div
+              key={index}
+              className="anchor-card"
+              onClick={() => handleSend(anchor.prompt)}
+              role="button"
+              tabIndex={0}
+            >
+              <div className="anchor-card-top icon-top">
+                <span className="anchor-icon-symbol">{anchor.icon}</span>
+                <div className="anchor-symbol-title">{anchor.title}</div>
+                <div className="anchor-symbol-sub">{anchor.subtitle}</div>
+              </div>
+              <div className="anchor-pill-tag">{anchor.tag}</div>
+              <p className="anchor-snippet">{anchor.snippet}</p>
+              <div className="anchor-footer">
+                <span className="anchor-category">{anchor.category}</span>
+                <span className="anchor-arrow">↑</span>
+              </div>
             </div>
-            <div className="anchor-pill-tag">Sunday mornings</div>
-            <p className="anchor-snippet">Listening to morning ragas with steamed idlis.</p>
-            <div className="anchor-footer">
-              <span className="anchor-category">Anchor</span>
-              <span className="anchor-arrow">↑</span>
-            </div>
-          </div>
-
-          {/* Card 2: Sensory Garden */}
-          <div
-            className="anchor-card"
-            onClick={() => handleSend("Tell me about the white night-blooming jasmine flowers in the old garden.")}
-            role="button"
-            tabIndex={0}
-          >
-            <div className="anchor-card-top icon-top">
-              <span className="anchor-icon-symbol">🌸</span>
-              <div className="anchor-symbol-title">Mylapore Garden</div>
-              <div className="anchor-symbol-sub">Est. 1974</div>
-            </div>
-            <div className="anchor-pill-tag">Your old garden</div>
-            <p className="anchor-snippet">White night-blooming jasmine (Malligai)...</p>
-            <div className="anchor-footer">
-              <span className="anchor-category">Sensory</span>
-              <span className="anchor-arrow">↑</span>
-            </div>
-          </div>
-
-          {/* Card 3: Brass Davarah */}
-          <div
-            className="anchor-card"
-            onClick={() => handleSend("I would love to remember the sound of brass tumblers and morning filter coffee.")}
-            role="button"
-            tabIndex={0}
-          >
-            <div className="anchor-card-top icon-top">
-              <span className="anchor-icon-symbol">☕</span>
-              <div className="anchor-symbol-title">Brass Davarah</div>
-              <div className="anchor-symbol-sub">Morning Ritual</div>
-            </div>
-            <div className="anchor-pill-tag">Filter coffee at 7 AM</div>
-            <p className="anchor-snippet">Rhythmic clinking of brass tumblers.</p>
-            <div className="anchor-footer">
-              <span className="anchor-category">Daily cadence</span>
-              <span className="anchor-arrow">↑</span>
-            </div>
-          </div>
-
-          {/* Card 4: Beloved Song */}
-          <div
-            className="anchor-card"
-            onClick={() => handleSend("Can we think about that soothing devotional melody that brings warmth and peace?")}
-            role="button"
-            tabIndex={0}
-          >
-            <div className="anchor-card-top icon-top">
-              <span className="anchor-icon-symbol">🎶</span>
-              <div className="anchor-symbol-title">குறை ஒன்றும் இல்லை</div>
-              <div className="anchor-symbol-sub">Ragam Sivaranjani</div>
-            </div>
-            <div className="anchor-pill-tag">Beloved song</div>
-            <p className="anchor-snippet">Devotional melody bringing warmth and security.</p>
-            <div className="anchor-footer">
-              <span className="anchor-category">Auditory</span>
-              <span className="anchor-arrow">↑</span>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
@@ -397,7 +421,7 @@ export default function CompanionChat() {
               <div className="timeline-bubble">
                 <div className="bubble-header-bar">
                   <span className="bubble-sender-name">
-                    {msg.sender === 'user' ? 'Meera (You)' : `Kural Companion`}
+                    {msg.sender === 'user' ? `${caregiverName} (You)` : `Kural Companion`}
                     {msg.sender === 'companion' && msg.isMock && (
                       <span className="tag-mock-dark">mock</span>
                     )}
@@ -407,7 +431,7 @@ export default function CompanionChat() {
                 <div className="bubble-text-content">{msg.text}</div>
                 {msg.sender === 'companion' && (
                   <div className="bubble-reaction-note">
-                    Reaction noted: <em>Gentle calm during tea</em>
+                    Reaction noted: <em>Gentle calm and attentive</em>
                   </div>
                 )}
               </div>
@@ -440,7 +464,7 @@ export default function CompanionChat() {
           <textarea
             ref={textareaRef}
             className="dock-textarea"
-            placeholder="Type a gentle memory or thought to Kural... (Enter to send)"
+            placeholder={`Type a gentle message to ${preferredName}... (Enter to send)`}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}

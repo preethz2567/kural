@@ -100,26 +100,26 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="onboarding-shell">
-      {/* Top Header */}
-      <header className="landing-header">
-        <div className="landing-header-inner">
-          <Link to="/" className="landing-brand-link" aria-label="Kural Home">
-            <span className="brand-tamil">குரல்</span>
-            <span className="brand-capsule">KURAL</span>
-            <span className="brand-dot">•</span>
-            <span className="brand-sub">Onboarding</span>
-          </Link>
-          <nav className="landing-header-nav">
-            <Link to="/profiles" className="btn-header-link">
-              View Profiles
-            </Link>
-          </nav>
+    <div className="stitch-mobile-frame">
+      {/* Top Capsule Header */}
+      <header className="stitch-header">
+        <div className="header-pill-badge">
+          <span className="wave-icon">❙❙•</span>
+          <span className="tamil-logo">குரல்</span>
+          <span className="kural-tag">KURAL</span>
+          <span className="header-dot">•</span>
+          <span className="header-portal-label">PROFILE ONBOARDING</span>
         </div>
       </header>
 
-      <main className="onboarding-main">
-        <div className="onboarding-container">
+      <div className="onboarding-container">
+        <div className="portal-heading-section" style={{ marginBottom: '12px' }}>
+          <span className="anchors-eyebrow">GUIDED SETUP</span>
+          <h1 className="portal-display-title" style={{ fontSize: '26px' }}>
+            Personalize their
+            <span className="title-gradient"> companion care</span>
+          </h1>
+        </div>
           {step <= 6 && (
             <div className="step-progress-bar" aria-label="Onboarding Progress">
               <div className="step-indicators">
@@ -576,19 +576,18 @@ export default function Onboarding() {
               <div className="success-actions">
                 <button
                   type="button"
-                  className="btn-pill btn-primary-pill"
+                  className="btn-stitch-primary"
                   onClick={() => navigate('/companion')}
                 >
                   Open Companion Chat with {formData.preferred_name || formData.name} →
                 </button>
-                <Link to="/profiles" className="btn-secondary-pill">
+                <Link to="/profiles" className="btn-stitch-secondary">
                   View All Profiles
                 </Link>
               </div>
             </div>
           )}
         </div>
-      </main>
     </div>
   )
 }

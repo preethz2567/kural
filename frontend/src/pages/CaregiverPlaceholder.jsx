@@ -1,11 +1,25 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { listPatients } from '../api.js'
 import '../App.css'
 
 export default function CaregiverPortal() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [isSent, setIsSent] = useState(false)
+  const [activePatient, setActivePatient] = useState(null)
+
+  useEffect(() => {
+    listPatients()
+      .then((patients) => {
+        if (patients && patients.length > 0) {
+          const storedId = localStorage.getItem('kural_active_patient_id')
+          const matched = patients.find((p) => p.patient_id === storedId) || patients[0]
+          setActivePatient(matched)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const handleMagicLink = (e) => {
     e.preventDefault()
@@ -15,6 +29,9 @@ export default function CaregiverPortal() {
       navigate('/profiles')
     }, 1200)
   }
+
+  const preferredName = activePatient?.preferred_name || activePatient?.name || 'Loved One'
+  const initialLetter = preferredName.charAt(0).toUpperCase()
 
   return (
     <div className="stitch-mobile-frame">
@@ -29,14 +46,12 @@ export default function CaregiverPortal() {
         </div>
       </header>
 
-      {/* Profile Avatar / Hero Portrait */}
+      {/* Dynamic Profile Avatar Hero */}
       <div className="portal-avatar-wrap">
         <div className="portal-avatar-ring">
-          <img
-            src="/amma_hero.png"
-            alt="Amma smiling with tea"
-            className="portal-avatar-img"
-          />
+          <div className="portal-avatar-circle">
+            <span className="portal-avatar-letter">{initialLetter}</span>
+          </div>
           <div className="avatar-heart-badge">♥</div>
         </div>
       </div>
@@ -48,7 +63,7 @@ export default function CaregiverPortal() {
           <span className="title-gradient"> set things up</span>
         </h1>
         <p className="portal-lead">
-          Preserving cherished memories, maternal cadence, and who they are.
+          Preserving cherished memories, familiar cadence, and who they are.
         </p>
       </section>
 
@@ -83,11 +98,11 @@ export default function CaregiverPortal() {
 
         {/* Quick Link Pills */}
         <div className="pills-quick-row">
-          <span className="pill-tag test-branch-pill">
+          <Link to="/profiles" className="pill-tag test-branch-pill">
             <span className="icon-fork">⑂</span> DIRECTORY
-          </span>
+          </Link>
           <Link to="/profiles" className="pill-tag linked-profile-pill">
-            <span className="dot-rose">•</span> Linked Profiles (Amma / Nell)
+            <span className="dot-rose">•</span> Linked Profile ({preferredName})
           </Link>
         </div>
 

@@ -1,7 +1,27 @@
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { listPatients } from '../api.js'
 import '../App.css'
 
 export default function LandingPage() {
+  const navigate = useNavigate()
+  const [activePatient, setActivePatient] = useState(null)
+
+  useEffect(() => {
+    listPatients()
+      .then((patients) => {
+        if (patients && patients.length > 0) {
+          const storedId = localStorage.getItem('kural_active_patient_id')
+          const matched = patients.find((p) => p.patient_id === storedId) || patients[0]
+          setActivePatient(matched)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const preferredName = activePatient?.preferred_name || activePatient?.name || 'Loved One'
+  const caregiverName = activePatient?.relationships?.[0]?.name || 'Caregiver'
+
   return (
     <div className="stitch-mobile-frame stitch-landing-frame">
       {/* Top Capsule Header */}
@@ -15,19 +35,17 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* Hero Portrait & Intergenerational Link */}
+      {/* Hero Avatar & Intergenerational Link */}
       <div className="landing-hero-center">
         <div className="portal-avatar-ring">
-          <img
-            src="/amma_hero.png"
-            alt="Amma and daughter sharing a warm conversation"
-            className="portal-avatar-img"
-          />
+          <div className="portal-avatar-circle">
+            <span className="portal-avatar-letter">{preferredName.charAt(0).toUpperCase()}</span>
+          </div>
           <div className="avatar-heart-badge">♥</div>
         </div>
 
         <div className="intergenerational-names-pill">
-          <span>Meera &amp; Amma</span>
+          <span>{caregiverName} &amp; {preferredName}</span>
           <span className="status-dot-green"></span>
         </div>
 
@@ -37,7 +55,7 @@ export default function LandingPage() {
         </h1>
 
         <p className="landing-body-lead">
-          Small messages can become familiar, reassuring moments in their day. Preserving cherished memories, maternal cadence, and who they are.
+          Small messages can become familiar, reassuring moments in their day. Preserving cherished memories, familiar cadence, and who they are.
         </p>
       </div>
 
@@ -51,7 +69,7 @@ export default function LandingPage() {
 
           <h2 className="card-headline">Caregiver Portal &amp; Setup</h2>
           <p className="card-description">
-            Anchor treasured stories, set stage-adaptive cadence, and stay gently connected with complete peace of mind.
+            Anchor treasured family stories, adapt stage-aware pacing, and stay gently connected with complete peace of mind.
           </p>
 
           <div className="card-actions-row">
@@ -72,12 +90,12 @@ export default function LandingPage() {
 
           <h2 className="card-headline">Personalized Companion Chat</h2>
           <p className="card-description">
-            Unhurried conversation grounded in familiar memories, morning tea rituals, and gentle reassurance.
+            Unhurried conversation grounded in {preferredName}&apos;s favorite memories, comfortable cadence, and infinite patience.
           </p>
 
           <div className="card-actions-row">
             <Link to="/companion" className="btn-stitch-primary">
-              Begin Companion Chat →
+              Begin Chat with {preferredName} →
             </Link>
             <Link to="/profiles" className="btn-stitch-secondary">
               Switch Person
@@ -86,21 +104,33 @@ export default function LandingPage() {
         </article>
       </div>
 
-      {/* Emotional Anchors Highlight */}
+      {/* Dynamic Emotional Anchors Highlight */}
       <section className="landing-anchors-preview">
         <div className="anchors-header-block">
           <span className="anchors-eyebrow">EMOTIONAL ANCHORS</span>
           <h2 className="anchors-title">Little things they know by heart.</h2>
           <p className="anchors-sub">
-            White night-blooming jasmine, brass davarahs, and quiet morning melodies.
+            {activePatient?.preferences?.likes?.length > 0
+              ? `Tuned with ${preferredName}'s favorite comforts: ${activePatient.preferences.likes.slice(0, 3).join(', ')}.`
+              : 'Familiar anchors that comfort them and bring timeless peace.'}
           </p>
         </div>
 
         <div className="anchors-mini-pills">
-          <span className="mini-pill">🌸 Mylapore Garden</span>
-          <span className="mini-pill">☕ Brass Davarah</span>
-          <span className="mini-pill">🎶 Morning Ragas</span>
-          <span className="mini-pill">🌿 Stage Compass</span>
+          {activePatient?.preferences?.likes?.length > 0 ? (
+            activePatient.preferences.likes.slice(0, 4).map((like, i) => (
+              <span key={i} className="mini-pill">
+                🌸 {like}
+              </span>
+            ))
+          ) : (
+            <>
+              <span className="mini-pill">🌸 Peaceful Memories</span>
+              <span className="mini-pill">☕ Afternoon Tea</span>
+              <span className="mini-pill">🎶 Quiet Songs</span>
+              <span className="mini-pill">🌿 Stage Compass</span>
+            </>
+          )}
         </div>
       </section>
 
