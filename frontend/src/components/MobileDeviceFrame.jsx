@@ -40,14 +40,6 @@ export default function MobileDeviceFrame({ children }) {
 
   return (
     <div className="web-device-wrapper">
-      {/* Ambient Lighting & Mesh Backdrop (Replaces dull flat black) */}
-      <div className="web-ambient-backdrop" aria-hidden="true">
-        <div className="web-ambient-orb orb-rose"></div>
-        <div className="web-ambient-orb orb-indigo"></div>
-        <div className="web-ambient-orb orb-teal"></div>
-        <div className="web-dot-grid-pattern"></div>
-      </div>
-
       {/* Main Desktop Showcase Stage */}
       <div className="web-showcase-stage">
         {/* Left Side Feature Anchor Card (Visible on desktop screens) */}
@@ -158,9 +150,6 @@ export default function MobileDeviceFrame({ children }) {
                 <div className="phone-home-indicator"></div>
               </div>
             </div>
-
-            {/* Soft Ambient Pedestal Glow beneath chassis */}
-            <div className="phone-pedestal-glow" aria-hidden="true"></div>
           </div>
         </main>
 

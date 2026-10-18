@@ -1,13 +1,11 @@
 /* ==========================================================================
-   Realistic Mobile Device Chassis & Atmospheric Web Viewport Showcase
+   Realistic Mobile Device Chassis & Clean Pastel Web Viewport Showcase
    ========================================================================== */
 
-/* Outer Web Viewport Wrapper */
+/* Outer Web Viewport Wrapper — Calming Pastel Shade */
 .web-device-wrapper {
   min-height: 100vh;
-  background-color: #0c0b10;
-  background-image:
-    radial-gradient(circle at 50% 0%, #181523 0%, #0e0c14 55%, #08070b 100%);
+  background-color: #f5edf2; /* Soothing pastel rose/porcelain shade */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -16,81 +14,6 @@
   box-sizing: border-box;
   overflow-x: hidden;
   position: relative;
-}
-
-/* Ambient Lighting & Mesh Backdrop Layer */
-.web-ambient-backdrop {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  overflow: hidden;
-}
-
-.web-ambient-orb {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.orb-rose {
-  top: -12%;
-  left: -8%;
-  width: 580px;
-  height: 580px;
-  background: radial-gradient(circle, rgba(242, 166, 191, 0.18) 0%, rgba(217, 120, 151, 0.05) 50%, transparent 75%);
-  filter: blur(100px);
-  animation: orbFloatRose 20s infinite alternate ease-in-out;
-}
-
-.orb-indigo {
-  bottom: -10%;
-  right: -8%;
-  width: 620px;
-  height: 620px;
-  background: radial-gradient(circle, rgba(129, 140, 248, 0.16) 0%, rgba(99, 102, 241, 0.04) 50%, transparent 75%);
-  filter: blur(110px);
-  animation: orbFloatIndigo 24s infinite alternate ease-in-out;
-}
-
-.orb-teal {
-  top: 38%;
-  right: 18%;
-  width: 440px;
-  height: 440px;
-  background: radial-gradient(circle, rgba(45, 212, 191, 0.09) 0%, transparent 70%);
-  filter: blur(90px);
-  animation: orbFloatTeal 28s infinite alternate ease-in-out;
-}
-
-@keyframes orbFloatRose {
-  0% { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(45px, 35px) scale(1.08); }
-}
-
-@keyframes orbFloatIndigo {
-  0% { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(-40px, -30px) scale(1.06); }
-}
-
-@keyframes orbFloatTeal {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(-30px, 45px); }
-}
-
-/* Subtle Geometric Dot Grid Texture Overlay */
-.web-dot-grid-pattern {
-  position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(rgba(242, 166, 191, 0.14) 1.2px, transparent 1.2px),
-    radial-gradient(rgba(255, 255, 255, 0.05) 1.2px, transparent 1.2px);
-  background-size: 32px 32px;
-  background-position: 0 0, 16px 16px;
-  mask-image: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0.85) 25%, rgba(0, 0, 0, 0.2) 75%, transparent 100%);
-  -webkit-mask-image: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0.85) 25%, rgba(0, 0, 0, 0.2) 75%, transparent 100%);
-  opacity: 0.85;
-  pointer-events: none;
 }
 
 /* Main Desktop Showcase Stage */
@@ -112,22 +35,22 @@
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  animation: fadeInSidebars 0.6s ease-out;
+  animation: fadeInSidebars 0.5s ease-out;
 }
 
 @keyframes fadeInSidebars {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .showcase-card {
-  background: rgba(22, 19, 27, 0.72);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(224, 208, 218, 0.8);
   border-radius: 24px;
   padding: 24px 20px;
-  box-shadow: 0 20px 45px -12px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 32px -8px rgba(90, 60, 80, 0.08), 0 2px 8px rgba(90, 60, 80, 0.04);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -139,24 +62,24 @@
   align-self: flex-start;
   padding: 4px 10px;
   border-radius: 9999px;
-  background: rgba(242, 166, 191, 0.14);
-  border: 1px solid rgba(242, 166, 191, 0.32);
-  color: var(--kural-pink);
+  background: #fbeaf1;
+  border: 1px solid #f2cad9;
+  color: #b84e73;
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.6px;
 }
 
 .showcase-tag-pill.tag-purple {
-  background: rgba(167, 139, 250, 0.14);
-  border-color: rgba(167, 139, 250, 0.32);
-  color: #c4b5fd;
+  background: #f1ecfa;
+  border-color: #dfd3f8;
+  color: #6e4bc9;
 }
 
 .showcase-title {
   font-size: 16px;
   font-weight: 700;
-  color: #ffffff;
+  color: #1e1319;
   margin: 0;
   line-height: 1.35;
   letter-spacing: -0.2px;
@@ -164,7 +87,7 @@
 
 .showcase-desc {
   font-size: 12px;
-  color: var(--text-muted);
+  color: #5d4f58;
   line-height: 1.55;
   margin: 0;
 }
@@ -175,7 +98,7 @@
   gap: 12px;
   margin-top: 4px;
   padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .showcase-feature-item {
@@ -193,14 +116,14 @@
 
 .showcase-feature-item strong {
   display: block;
-  color: #ffffff;
+  color: #1e1319;
   font-weight: 600;
   font-size: 12px;
   margin-bottom: 2px;
 }
 
 .showcase-feature-item span {
-  color: var(--text-muted);
+  color: #6c5c66;
   font-size: 11px;
   line-height: 1.35;
   display: block;
@@ -230,23 +153,23 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  background: rgba(26, 23, 32, 0.88);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(220, 205, 215, 0.8);
   border-radius: 9999px;
   padding: 5px 14px;
   font-size: 11px;
   font-weight: 600;
-  color: var(--text-body);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  color: #2e2329;
+  box-shadow: 0 4px 12px rgba(80, 50, 70, 0.06);
 }
 
 .preview-pulse-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #4ade80;
-  box-shadow: 0 0 8px #4ade80;
+  background: #16a34a;
+  box-shadow: 0 0 6px #16a34a;
   animation: pulsePreviewGlow 2s infinite ease-in-out;
 }
 
@@ -256,22 +179,22 @@
 }
 
 .preview-label {
-  color: #ffffff;
+  color: #1e1319;
   font-weight: 700;
 }
 
 .preview-divider {
-  color: var(--text-muted);
+  color: #a4939d;
 }
 
 .preview-sub {
-  color: var(--kural-pink);
+  color: #b84e73;
   font-weight: 600;
 }
 
 .web-preview-hint {
   font-size: 11px;
-  color: var(--text-muted);
+  color: #7a6b74;
   font-weight: 500;
   letter-spacing: 0.2px;
 }
@@ -289,10 +212,10 @@
   display: flex;
   flex-direction: column;
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.14),
-    0 0 0 2px #18151f,
-    0 25px 65px -10px rgba(0, 0, 0, 0.9),
-    0 0 50px rgba(242, 166, 191, 0.12);
+    0 0 0 1px rgba(0, 0, 0, 0.12),
+    0 0 0 2px rgba(255, 255, 255, 0.25),
+    0 24px 50px -12px rgba(60, 35, 50, 0.28),
+    0 8px 20px -4px rgba(60, 35, 50, 0.12);
 }
 
 /* Hardware Side Buttons */
@@ -521,21 +444,6 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
 
-/* Soft Ambient Pedestal Glow beneath chassis */
-.phone-pedestal-glow {
-  position: absolute;
-  bottom: -22px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 330px;
-  height: 34px;
-  background: radial-gradient(ellipse at center, rgba(242, 166, 191, 0.22) 0%, rgba(129, 140, 248, 0.08) 45%, transparent 75%);
-  filter: blur(14px);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: -1;
-}
-
 /* Adaptations when inside phone screen on Web/Desktop view */
 @media (min-width: 681px) {
   body {
@@ -586,10 +494,8 @@
     background-image: none;
   }
 
-  .web-ambient-backdrop,
   .web-preview-header-bar,
-  .web-showcase-sidebar,
-  .phone-pedestal-glow {
+  .web-showcase-sidebar {
     display: none;
   }
 
