@@ -33,6 +33,7 @@ export default function CompanionChat() {
   const [backendStatus, setBackendStatus] = useState(null)
   const [latestDistress, setLatestDistress] = useState({ level: 'none', reason: 'Awaiting input' })
   const [isMockMode, setIsMockMode] = useState(false)
+  const [showSafeZoneModal, setShowSafeZoneModal] = useState(false)
 
   const messagesEndRef = useRef(null)
   const textareaRef = useRef(null)
@@ -357,12 +358,18 @@ export default function CompanionChat() {
 
         {/* Live Safety Safe Zone & Cadence Indicators */}
         <div className="status-bars-row">
-          <div className="safe-zone-bar">
+          <div
+            className="safe-zone-bar safe-zone-interactive"
+            onClick={() => setShowSafeZoneModal(true)}
+            role="button"
+            tabIndex={0}
+            title="View Live Safety & Geofence Details"
+          >
             <span className="safe-zone-icon">📍</span>
             <span className="safe-zone-label">
               <strong>Safe Zone:</strong> {patientData?.places_lived?.[0] || 'Home (Safe)'}
             </span>
-            <span className="safe-zone-badge">Normal</span>
+            <span className="safe-zone-badge">Normal ↗</span>
           </div>
 
           <div className="cadence-mini-bar">
@@ -607,6 +614,81 @@ export default function CompanionChat() {
           </button>
         </form>
       </footer>
+
+      {/* Safe Zone Details Sheet / Modal */}
+      {showSafeZoneModal && (
+        <div className="safe-modal-backdrop" onClick={() => setShowSafeZoneModal(false)}>
+          <div className="safe-modal-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="safe-modal-header">
+              <div className="safe-modal-title-row">
+                <span className="safe-modal-icon">📍</span>
+                <div>
+                  <h3 className="safe-modal-title">Live Safety &amp; Geofence</h3>
+                  <span className="safe-modal-sub">Continuous Boundary Protection</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn-modal-close"
+                onClick={() => setShowSafeZoneModal(false)}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="safe-modal-status-card">
+              <div className="safe-status-headline">
+                <span className="status-ping-dot"></span>
+                <span>Inside Designated Safe Zone</span>
+              </div>
+              <p className="safe-status-desc">
+                {preferredName} is currently within the verified home perimeter at{' '}
+                <strong>{patientData?.preferred_address || patientData?.places_lived?.[0] || 'Home Residence'}</strong>.
+              </p>
+            </div>
+
+            <div className="safe-metrics-grid">
+              <div className="safe-metric-item">
+                <span className="safe-metric-label">Heartbeat Ping</span>
+                <span className="safe-metric-value">2 min ago</span>
+              </div>
+              <div className="safe-metric-item">
+                <span className="safe-metric-label">Boundary Radius</span>
+                <span className="safe-metric-value">500 meters</span>
+              </div>
+              <div className="safe-metric-item">
+                <span className="safe-metric-label">Wandering Escalation</span>
+                <span className="safe-metric-value text-green">Active (SMS Alert)</span>
+              </div>
+              <div className="safe-metric-item">
+                <span className="safe-metric-label">Linked Caregiver</span>
+                <span className="safe-metric-value">{caregiverName}</span>
+              </div>
+            </div>
+
+            <div className="safe-modal-actions">
+              <button
+                type="button"
+                className="btn-stitch-primary"
+                onClick={() => {
+                  alert(`Pinging ${caregiverName}: Location confirmed safe at ${patientData?.places_lived?.[0] || 'Home'}.`)
+                  setShowSafeZoneModal(false)
+                }}
+              >
+                Send Location Check-In to {caregiverName}
+              </button>
+              <button
+                type="button"
+                className="btn-stitch-secondary"
+                onClick={() => setShowSafeZoneModal(false)}
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -73,11 +73,17 @@ export default function LandingPage() {
             className="landing-family-img"
           />
           <div className="landing-avatar-overlap">
-            <img
-              src="/avatar_amma.jpg"
-              alt={preferredName}
-              className="landing-mini-avatar"
-            />
+            {activePatient?.patient_id === 'patient_kalyani' ? (
+              <img
+                src="/avatar_amma.jpg"
+                alt={preferredName}
+                className="landing-mini-avatar"
+              />
+            ) : (
+              <div className="landing-mini-avatar-circle">
+                <span>{preferredName.charAt(0).toUpperCase()}</span>
+              </div>
+            )}
             <div className="avatar-heart-badge">♥</div>
           </div>
         </div>

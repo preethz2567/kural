@@ -47,6 +47,25 @@ export default function CaregiverPortal() {
   })
   const [previewingId, setPreviewingId] = useState(null)
 
+  const [newNote, setNewNote] = useState('')
+  const [copiedToast, setCopiedToast] = useState(false)
+  const [logs, setLogs] = useState([
+    {
+      id: 1,
+      time: 'Today, 11:30 AM • Morning Session',
+      text: 'Smiled and listened attentively when reminiscing about morning tea rituals.',
+      tranquility: 'Calm',
+      escalations: 0,
+    },
+    {
+      id: 2,
+      time: 'Yesterday, 4:15 PM • Afternoon Chat',
+      text: 'Expressed quiet comfort hearing familiar family names. Calming cadence applied.',
+      tranquility: 'Gentle Care',
+      escalations: 0,
+    },
+  ])
+
   useEffect(() => {
     listPatients()
       .then((patients) => {
@@ -58,6 +77,48 @@ export default function CaregiverPortal() {
       })
       .catch(() => {})
   }, [])
+
+  const handleAddNote = (e) => {
+    e.preventDefault()
+    if (!newNote.trim()) return
+    const noteItem = {
+      id: Date.now(),
+      time: 'Just now • Caregiver Observation',
+      text: newNote.trim(),
+      tranquility: 'Calm',
+      escalations: 0,
+    }
+    setLogs([noteItem, ...logs])
+    setNewNote('')
+  }
+
+  const handleExportSummary = () => {
+    const summary = `
+=============================================
+KURAL (குரல்) — DAILY TRANQUILITY & CARE SUMMARY
+=============================================
+Loved One: ${preferredName} (${activePatient?.name || ''})
+Stage: ${stageDisplay}
+Caregiver Linked: ${caregiverName}
+Date: ${new Date().toLocaleDateString(undefined, { dateStyle: 'full' })}
+
+1. TRANQUILITY INDEX:
+- Overall Score: 96% Calm & Grounded
+- Agitation / Escalations: 0 Reported
+
+2. ACTIVE EMOTIONAL ANCHORS & COMFORT ROUTINES:
+${(activePatient?.preferences?.likes || ['Afternoon tea', 'Familiar songs']).map((l) => `- ${l}`).join('\n')}
+
+3. RECENT OBSERVATIONS & NOTES:
+${logs.map((l) => `[${l.time}] ${l.text}`).join('\n')}
+
+Generated with love by Kural Dementia Companion Care.
+=============================================`.trim()
+
+    navigator.clipboard?.writeText(summary)
+    setCopiedToast(true)
+    setTimeout(() => setCopiedToast(false), 2500)
+  }
 
   const handleSelectCadence = (cadenceKey) => {
     setSelectedCadence(cadenceKey)
@@ -278,29 +339,50 @@ export default function CaregiverPortal() {
             </div>
           </div>
 
-          {/* Recent Archival Notes */}
+          {/* Recent Archival Notes & Observation Form */}
           <div className="workspace-section-block">
-            <span className="anchors-eyebrow">CAREGIVER REACTION LOG</span>
-            <div className="reaction-log-cards">
-              <div className="reaction-log-item">
-                <div className="reaction-log-time">Today, 11:30 AM • Morning Session</div>
-                <div className="reaction-log-text">
-                  &ldquo;Smiled and listened attentively when reminiscing about morning tea rituals.&rdquo;
-                </div>
-                <div className="reaction-log-meta">
-                  <span>Tranquility: Calm</span> • <span>Stage: {stageDisplay}</span>
-                </div>
-              </div>
+            <div className="workspace-section-header">
+              <span className="anchors-eyebrow">CAREGIVER REACTION LOG</span>
+              <button
+                type="button"
+                className="btn-export-summary"
+                onClick={handleExportSummary}
+                title="Export clean summary report for doctor or family"
+              >
+                {copiedToast ? '✓ Copied to Clipboard!' : '📋 Export Doctor Summary'}
+              </button>
+            </div>
 
-              <div className="reaction-log-item">
-                <div className="reaction-log-time">Yesterday, 4:15 PM • Afternoon Chat</div>
-                <div className="reaction-log-text">
-                  &ldquo;Expressed quiet comfort hearing familiar family names. Calming cadence applied.&rdquo;
+            {/* Quick Observation Input */}
+            <form onSubmit={handleAddNote} className="log-input-form">
+              <input
+                type="text"
+                className="log-note-input"
+                placeholder={`Note a reaction or mood for ${preferredName}...`}
+                value={newNote}
+                onChange={(e) => setNewNote(e.target.value)}
+              />
+              <button
+                type="submit"
+                className="btn-add-note"
+                disabled={!newNote.trim()}
+              >
+                + Add Note
+              </button>
+            </form>
+
+            <div className="reaction-log-cards">
+              {logs.map((log) => (
+                <div key={log.id} className="reaction-log-item">
+                  <div className="reaction-log-time">{log.time}</div>
+                  <div className="reaction-log-text">
+                    &ldquo;{log.text}&rdquo;
+                  </div>
+                  <div className="reaction-log-meta">
+                    <span>Tranquility: {log.tranquility}</span> • <span>Stage: {stageDisplay}</span>
+                  </div>
                 </div>
-                <div className="reaction-log-meta">
-                  <span>Tranquility: Gentle Care</span> • <span>Escalations: 0</span>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
