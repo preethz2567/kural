@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { checkBackendHealth, fetchPatient, sendChatMessage } from '../api.js'
 import { CADENCE_PRESETS } from '../cadencePresets.js'
+import { base64ToAudioUrl, playClonedAudio, unlockAudio } from '../audioUtils.js'
 import '../App.css'
 
 function createSessionId(prefix = 'sess') {
@@ -175,6 +176,7 @@ export default function CompanionChat() {
   }, [messages, isLoading])
 
   const handleSend = async (customPrompt) => {
+    unlockAudio()
     const textToSend = typeof customPrompt === 'string' ? customPrompt : inputText
     const trimmed = textToSend.trim()
     if (!trimmed || isLoading) return
@@ -375,8 +377,8 @@ export default function CompanionChat() {
 
   const stopSpeaking = () => {
     if (clonedAudioRef.current) {
-      clonedAudioRef.current.pause()
-      clonedAudioRef.current.currentTime = 0
+      clonedAudioRef.current.stop?.()
+      clonedAudioRef.current.pause?.()
       clonedAudioRef.current = null
     }
     if ('speechSynthesis' in window) {
@@ -441,41 +443,31 @@ export default function CompanionChat() {
     stopSpeaking()
 
     if (audioData?.audio_base64) {
-      try {
-        const mime = audioData.audio_mime || audioData.content_type || 'audio/mp3'
-        const audioUrl = `data:${mime};base64,${audioData.audio_base64}`
-        const audio = new Audio(audioUrl)
-        clonedAudioRef.current = audio
+      const speaker = audioData.speaker_name || caregiverName
+      setCurrentSpeaker(speaker)
+      setIsSpeaking(true)
+      setIsClonedAudio(true)
 
-        const speaker = audioData.speaker_name || caregiverName
-        setCurrentSpeaker(speaker)
-        setIsSpeaking(true)
-        setIsClonedAudio(true)
-
-        audio.onended = () => {
+      const controller = playClonedAudio(audioData, {
+        onStart: () => {
+          setIsSpeaking(true)
+          setIsClonedAudio(true)
+        },
+        onEnded: () => {
           setIsSpeaking(false)
           setIsClonedAudio(false)
-        }
-        audio.onerror = (e) => {
-          console.warn('[Auto-Voice] Cloned audio decode/playback error, falling back to Web Speech:', e)
+          clonedAudioRef.current = null
+        },
+        onError: (err) => {
+          console.warn('[Auto-Voice] Cloned neural playback error, falling back to local speech:', err)
           setIsSpeaking(false)
           setIsClonedAudio(false)
+          clonedAudioRef.current = null
           if (textFallback) speakReply(textFallback)
-        }
-
-        const playPromise = audio.play()
-        if (playPromise !== undefined) {
-          playPromise.catch((err) => {
-            console.warn('[Auto-Voice] Autoplay was prevented by browser security policy:', err)
-            setIsSpeaking(false)
-            setIsClonedAudio(false)
-            if (textFallback) speakReply(textFallback)
-          })
-        }
-        return
-      } catch (err) {
-        console.warn('[Auto-Voice] Failed to initialize Audio element:', err)
-      }
+        },
+      })
+      clonedAudioRef.current = controller
+      return
     }
 
     // Fallback if no audio payload or synthesis failed

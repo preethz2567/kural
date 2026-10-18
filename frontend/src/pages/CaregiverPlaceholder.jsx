@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { listPatients, getVoiceProfile, cloneCaregiverVoice, synthesizeVoiceSpeech } from '../api.js'
 import { CADENCE_PRESETS } from '../cadencePresets.js'
+import { base64ToAudioUrl, playClonedAudio, unlockAudio } from '../audioUtils.js'
 import '../App.css'
 
 const DEFAULT_OBSERVATION_LOGS = [
@@ -512,9 +513,11 @@ Generated with love by Kural Dementia Companion Care.
   }
 
   const handleTestClonedVoice = async () => {
+    unlockAudio()
     if (isPlayingTestVoice) {
       if (testAudioPlayerRef.current) {
-        testAudioPlayerRef.current.pause()
+        testAudioPlayerRef.current.stop?.()
+        testAudioPlayerRef.current.pause?.()
         testAudioPlayerRef.current = null
       }
       if ('speechSynthesis' in window) {
@@ -526,7 +529,6 @@ Generated with love by Kural Dementia Companion Care.
 
     setIsSynthesizingTest(true)
     const textToSynthesize = testSynthesizeText.trim() || `Hello, I am right here with you.`
-    let played = false
 
     try {
       const isTamil = activePatientId === 'patient_kalyani' || (activePatient?.language && activePatient.language.toLowerCase().includes('tamil'))
@@ -538,29 +540,36 @@ Generated with love by Kural Dementia Companion Care.
 
       if (res?.audio_base64) {
         if (testAudioPlayerRef.current) {
-          testAudioPlayerRef.current.pause()
+          testAudioPlayerRef.current.stop?.()
+          testAudioPlayerRef.current.pause?.()
           testAudioPlayerRef.current = null
         }
-        const mime = res.content_type || res.audio_mime || 'audio/mp3'
-        const audio = new Audio(`data:${mime};base64,${res.audio_base64}`)
-        testAudioPlayerRef.current = audio
-        setIsPlayingTestVoice(true)
-        audio.onended = () => setIsPlayingTestVoice(false)
-        audio.onerror = () => {
-          setIsPlayingTestVoice(false)
-          speakFallbackSpeech(textToSynthesize)
-        }
-        await audio.play()
-        played = true
+
+        const controller = playClonedAudio(res, {
+          onStart: () => setIsPlayingTestVoice(true),
+          onEnded: () => {
+            setIsPlayingTestVoice(false)
+            testAudioPlayerRef.current = null
+          },
+          onError: (err) => {
+            console.warn('[Voice Studio] Neural audio playback failed:', err)
+            setIsPlayingTestVoice(false)
+            testAudioPlayerRef.current = null
+            setCloneErrorToast('Voice playback failed: ' + (err.message || 'Check browser audio permissions'))
+            setTimeout(() => setCloneErrorToast(null), 4000)
+          },
+        })
+        testAudioPlayerRef.current = controller
+      } else {
+        setCloneErrorToast('Voice synthesis returned without audio data. Please try again.')
+        setTimeout(() => setCloneErrorToast(null), 4000)
       }
     } catch (err) {
-      console.warn('[Voice Studio] Backend synthesis error, falling back to local speech:', err)
+      console.warn('[Voice Studio] Backend synthesis error:', err)
+      setCloneErrorToast('Speech synthesis failed: ' + (err.message || 'Backend unreachable'))
+      setTimeout(() => setCloneErrorToast(null), 4000)
     } finally {
       setIsSynthesizingTest(false)
-    }
-
-    if (!played) {
-      speakFallbackSpeech(textToSynthesize)
     }
   }
 

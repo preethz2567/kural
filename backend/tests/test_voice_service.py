@@ -56,7 +56,7 @@ def test_synthesize_speech_endpoint(client):
     assert data["voice_cloned"] is True
     assert "audio_base64" in data
     assert len(data["audio_base64"]) > 50
-    assert data["content_type"] in ("audio/mp3", "audio/wav")
+    assert data["content_type"] in ("audio/mpeg", "audio/mp3", "audio/wav")
     assert data["speaker_name"] == "Meera"
 
 def test_chat_returns_cloned_voice_audio(client):

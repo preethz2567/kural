@@ -49,10 +49,10 @@ def select_neural_voice(profile: Dict[str, Any], language: Optional[str], text: 
         # Female relations (daughter, mother, sister, wife, granddaughter, caregiver)
         return "ta-IN-PallaviNeural"
     else:
-        # English relations
+        # English relations (expressive, natural warm cadence)
         if any(r in relation for r in ["son", "brother", "husband", "father", "uncle", "grandson"]):
-            return "en-US-GuyNeural"
-        return "en-US-JennyNeural"
+            return "en-IN-PrabhatNeural"
+        return "en-IN-NeerjaExpressiveNeural"
 
 async def synthesize_neural_speech(
     text: str,
@@ -216,8 +216,8 @@ async def synthesize_speech(
     if audio_base64:
         return {
             "audio_base64": audio_base64,
-            "audio_mime": "audio/mp3",
-            "content_type": "audio/mp3",
+            "audio_mime": "audio/mpeg",
+            "content_type": "audio/mpeg",
             "voice_cloned": True,
             "speaker_name": speaker_name,
             "model": "coqui-xtts-v2-calibrated",
