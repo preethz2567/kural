@@ -22,8 +22,20 @@ load_dotenv(backend_dir.parent / ".env")
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
+def normalize_anthropic_model(raw_model: Optional[str]) -> str:
+    m = (raw_model or "").strip().strip('"').strip("'").lower()
+    if not m:
+        return "claude-3-5-haiku-20241022"
+    if "haiku" in m:
+        return "claude-3-5-haiku-20241022"
+    if "sonnet" in m:
+        return "claude-3-5-sonnet-20241022"
+    if "opus" in m:
+        return "claude-3-opus-20240229"
+    return (raw_model or "").strip().strip('"').strip("'")
+
 # Read model identifier and API key from environment with quotes/whitespace stripped
-ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022").strip().strip('"').strip("'")
+ANTHROPIC_MODEL = normalize_anthropic_model(os.getenv("ANTHROPIC_MODEL", "claude-3-5-haiku-20241022"))
 api_key = (os.getenv("ANTHROPIC_API_KEY") or "").strip().strip('"').strip("'") or None
 
 # Non-blocking async Anthropic client if API key is provided; tests can monkeypatch client to None
@@ -41,7 +53,7 @@ def get_active_client():
     load_dotenv(backend_dir.parent / ".env", override=True)
     live_key = (os.getenv("ANTHROPIC_API_KEY") or "").strip().strip('"').strip("'") or None
     if live_key:
-        ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022").strip().strip('"').strip("'")
+        ANTHROPIC_MODEL = normalize_anthropic_model(os.getenv("ANTHROPIC_MODEL", "claude-3-5-haiku-20241022"))
         client = anthropic.AsyncAnthropic(api_key=live_key)
         return client
     return None
