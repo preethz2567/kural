@@ -86,10 +86,32 @@ export default function CompanionChat() {
   const [showSafeZoneModal, setShowSafeZoneModal] = useState(false)
   const [isPlayingFamilyVoice, setIsPlayingFamilyVoice] = useState(false)
   const [checkInSent, setCheckInSent] = useState(false)
+  const [autoVoiceEnabled, setAutoVoiceEnabled] = useState(() => {
+    return localStorage.getItem('kural_auto_voice') !== 'false'
+  })
+  const [isClonedAudio, setIsClonedAudio] = useState(false)
+  const [currentSpeaker, setCurrentSpeaker] = useState('Caregiver')
 
   const messagesEndRef = useRef(null)
   const textareaRef = useRef(null)
   const familyAudioRef = useRef(null)
+  const clonedAudioRef = useRef(null)
+
+  useEffect(() => {
+    return () => {
+      if (clonedAudioRef.current) {
+        clonedAudioRef.current.pause()
+        clonedAudioRef.current = null
+      }
+      if (familyAudioRef.current) {
+        familyAudioRef.current.pause()
+        familyAudioRef.current = null
+      }
+      if ('speechSynthesis' in window) {
+        speechSynthesis.cancel()
+      }
+    }
+  }, [])
 
   const toggleLanguage = () => {
     const next = langMode === 'en' ? 'ta' : 'en'
@@ -193,9 +215,15 @@ export default function CompanionChat() {
         timestamp: new Date().toISOString(),
         distress: data.distress,
         isMock: isMock,
+        audio: data.audio || null,
       }
 
       setMessages((prev) => [...prev, companionMessage])
+
+      // Automatic Voice Cloning Playback: immediately speaks in caregiver's voice
+      if (autoVoiceEnabled) {
+        playAudioResponse(data.audio, replyText)
+      }
     } catch (err) {
       setError(err.message || 'Unable to connect to companion service.')
     } finally {
@@ -345,9 +373,31 @@ export default function CompanionChat() {
     }
   }
 
+  const stopSpeaking = () => {
+    if (clonedAudioRef.current) {
+      clonedAudioRef.current.pause()
+      clonedAudioRef.current.currentTime = 0
+      clonedAudioRef.current = null
+    }
+    if ('speechSynthesis' in window) {
+      speechSynthesis.cancel()
+    }
+    setIsSpeaking(false)
+    setIsClonedAudio(false)
+  }
+
+  const toggleAutoVoice = () => {
+    const next = !autoVoiceEnabled
+    setAutoVoiceEnabled(next)
+    localStorage.setItem('kural_auto_voice', String(next))
+    if (!next) {
+      stopSpeaking()
+    }
+  }
+
   const speakReply = (textToSpeak) => {
     if (!('speechSynthesis' in window)) return
-    speechSynthesis.cancel()
+    stopSpeaking()
     const cleanText = textToSpeak.replace(/\[.*?\]/g, '').trim()
     const utterance = new SpeechSynthesisUtterance(cleanText)
 
@@ -372,10 +422,66 @@ export default function CompanionChat() {
       if (gentleVoice) utterance.voice = gentleVoice
     }
 
-    utterance.onstart = () => setIsSpeaking(true)
-    utterance.onend = () => setIsSpeaking(false)
-    utterance.onerror = () => setIsSpeaking(false)
+    utterance.onstart = () => {
+      setIsSpeaking(true)
+      setIsClonedAudio(false)
+    }
+    utterance.onend = () => {
+      setIsSpeaking(false)
+      setIsClonedAudio(false)
+    }
+    utterance.onerror = () => {
+      setIsSpeaking(false)
+      setIsClonedAudio(false)
+    }
     speechSynthesis.speak(utterance)
+  }
+
+  const playAudioResponse = (audioData, textFallback) => {
+    stopSpeaking()
+
+    if (audioData?.audio_base64) {
+      try {
+        const mime = audioData.audio_mime || 'audio/wav'
+        const audioUrl = `data:${mime};base64,${audioData.audio_base64}`
+        const audio = new Audio(audioUrl)
+        clonedAudioRef.current = audio
+
+        const speaker = audioData.speaker_name || caregiverName
+        setCurrentSpeaker(speaker)
+        setIsSpeaking(true)
+        setIsClonedAudio(true)
+
+        audio.onended = () => {
+          setIsSpeaking(false)
+          setIsClonedAudio(false)
+        }
+        audio.onerror = (e) => {
+          console.warn('[Auto-Voice] Cloned audio decode/playback error, falling back to Web Speech:', e)
+          setIsSpeaking(false)
+          setIsClonedAudio(false)
+          if (textFallback) speakReply(textFallback)
+        }
+
+        const playPromise = audio.play()
+        if (playPromise !== undefined) {
+          playPromise.catch((err) => {
+            console.warn('[Auto-Voice] Autoplay was prevented by browser security policy:', err)
+            setIsSpeaking(false)
+            setIsClonedAudio(false)
+            if (textFallback) speakReply(textFallback)
+          })
+        }
+        return
+      } catch (err) {
+        console.warn('[Auto-Voice] Failed to initialize Audio element:', err)
+      }
+    }
+
+    // Fallback if no audio payload or synthesis failed
+    if (textFallback) {
+      speakReply(textFallback)
+    }
   }
 
   const toggleVoiceInput = () => {
@@ -431,6 +537,20 @@ export default function CompanionChat() {
         </div>
 
         <div className="chat-header-person">
+          <button
+            type="button"
+            className={`btn-auto-voice-toggle ${autoVoiceEnabled ? 'auto-voice-on' : 'auto-voice-off'}`}
+            onClick={toggleAutoVoice}
+            title={
+              autoVoiceEnabled
+                ? 'Auto-Voice ON: Cloned caregiver voice plays automatically for each reply. Tap to mute.'
+                : 'Auto-Voice MUTED: Tap to enable automatic cloned speech.'
+            }
+            aria-label="Toggle auto voice playback"
+          >
+            {autoVoiceEnabled ? '🔊 Auto' : '🔇 Mute'}
+          </button>
+
           <button
             type="button"
             className={`btn-lang-toggle ${langMode === 'ta' ? 'lang-ta-active' : ''}`}
@@ -713,11 +833,22 @@ export default function CompanionChat() {
                     <button
                       type="button"
                       className="btn-speak-bubble"
-                      onClick={() => speakReply(msg.text)}
-                      title="Listen to this message"
+                      onClick={() => {
+                        if (msg.audio?.audio_base64) {
+                          playAudioResponse(msg.audio, msg.text)
+                        } else {
+                          speakReply(msg.text)
+                        }
+                      }}
+                      title="Replay this response in voice"
                     >
-                      🔊 Listen
+                      {isSpeaking ? '🔊 Replay' : '▶ Replay'}
                     </button>
+                    {msg.audio?.speaker_name && (
+                      <span className="cloned-voice-bubble-badge" title="Synthesized with open-source Coqui XTTS-v2 voice model">
+                        🎙️ {msg.audio.speaker_name}&apos;s Cloned Voice
+                      </span>
+                    )}
                     <div className={`bubble-reaction-note reaction-level-${msg.distress?.level || 'none'}`}>
                       <span>{formatReactionNote(msg.distress)}</span>
                       {msg.distress?.matched_keywords?.length > 0 && (
@@ -745,6 +876,37 @@ export default function CompanionChat() {
           <div ref={messagesEndRef} />
         </div>
       </section>
+
+      {/* Live Cloned Speech Indicator & Player Banner */}
+      {isSpeaking && (
+        <div className="live-speech-dock-banner">
+          <div className="live-speech-content">
+            <div className="speech-wave-anim">
+              <span className="wave-bar bar-1"></span>
+              <span className="wave-bar bar-2"></span>
+              <span className="wave-bar bar-3"></span>
+              <span className="wave-bar bar-4"></span>
+              <span className="wave-bar bar-5"></span>
+            </div>
+            <div className="live-speech-meta">
+              <span className="live-speech-speaker">
+                {isClonedAudio ? `🎙️ Speaking in ${currentSpeaker}'s Cloned Voice` : '🎙️ Speaking Companion Reply'}
+              </span>
+              <span className="live-speech-engine">
+                {isClonedAudio ? 'Coqui XTTS-v2 (LinuxONE Architecture) • Auto-Playing' : 'Gentle Maternal Cadence'}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="btn-live-speech-stop"
+            onClick={stopSpeaking}
+            title="Stop audio playback"
+          >
+            ⏹ Stop
+          </button>
+        </div>
+      )}
 
       {/* Floating Input Dock with Voice Input Button */}
       <footer className="stitch-chat-dock">

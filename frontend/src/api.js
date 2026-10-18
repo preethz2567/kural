@@ -146,3 +146,62 @@ export async function sendChatMessage(patientId, payload, { signal } = {}) {
   }
   return res.json()
 }
+
+/**
+ * Fetch the active voice cloning profile for a patient via GET /voice/:patientId
+ * @param {string} patientId
+ * @param {object} [opts]
+ * @param {AbortSignal} [opts.signal]
+ * @returns {Promise<object>}
+ */
+export async function getVoiceProfile(patientId, { signal } = {}) {
+  const res = await fetch(apiUrl(`/voice/${patientId}`), { signal })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.detail || `Failed to fetch voice profile (HTTP ${res.status})`)
+  }
+  return res.json()
+}
+
+/**
+ * Register / train a caregiver cloned voice profile via POST /voice/clone/:patientId
+ * @param {string} patientId
+ * @param {{ speaker_name: string, audio_base64: string, relation?: string, language?: string, cadence_preset?: string }} payload
+ * @param {object} [opts]
+ * @param {AbortSignal} [opts.signal]
+ * @returns {Promise<object>}
+ */
+export async function cloneCaregiverVoice(patientId, payload, { signal } = {}) {
+  const res = await fetch(apiUrl(`/voice/clone/${patientId}`), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal,
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.detail || `Voice cloning failed (HTTP ${res.status})`)
+  }
+  return res.json()
+}
+
+/**
+ * Synthesize speech in cloned caregiver voice via POST /voice/synthesize
+ * @param {{ patient_id: string, text: string, language?: string }} payload
+ * @param {object} [opts]
+ * @param {AbortSignal} [opts.signal]
+ * @returns {Promise<{ audio_base64: string, content_type: string, voice_cloned: boolean, speaker_name: string }>}
+ */
+export async function synthesizeVoiceSpeech(payload, { signal } = {}) {
+  const res = await fetch(apiUrl('/voice/synthesize'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal,
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.detail || `Speech synthesis failed (HTTP ${res.status})`)
+  }
+  return res.json()
+}

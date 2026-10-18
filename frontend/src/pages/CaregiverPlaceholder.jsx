@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { listPatients } from '../api.js'
+import { listPatients, getVoiceProfile, cloneCaregiverVoice, synthesizeVoiceSpeech } from '../api.js'
 import '../App.css'
 
 export const CADENCE_PRESETS = {
@@ -209,6 +209,19 @@ export default function CaregiverPortal() {
   const audioChunksRef = useRef([])
   const timerRef = useRef(null)
   const audioPlayerRef = useRef(null)
+
+  // Voice Cloning Studio & Coqui XTTS-v2 Integration State
+  const [voiceProfile, setVoiceProfile] = useState(null)
+  const [cloneSpeakerName, setCloneSpeakerName] = useState('')
+  const [cloneSpeakerRelation, setCloneSpeakerRelation] = useState('')
+  const [isCloningVoice, setIsCloningVoice] = useState(false)
+  const [cloneSuccessToast, setCloneSuccessToast] = useState(null)
+  const [cloneErrorToast, setCloneErrorToast] = useState(null)
+  const [isSynthesizingTest, setIsSynthesizingTest] = useState(false)
+  const [isPlayingTestVoice, setIsPlayingTestVoice] = useState(false)
+  const [testSynthesizeText, setTestSynthesizeText] = useState('')
+  const testAudioPlayerRef = useRef(null)
+  const fileInputRef = useRef(null)
 
   const [newNote, setNewNote] = useState('')
   const [copiedToast, setCopiedToast] = useState(false)
@@ -423,6 +436,122 @@ Generated with love by Kural Dementia Companion Care.
     setRecordedAudioUrl(null)
   }
 
+  // Fetch active voice profile when patient changes
+  useEffect(() => {
+    if (!activePatientId) return
+    getVoiceProfile(activePatientId)
+      .then((profile) => {
+        setVoiceProfile(profile)
+        if (profile?.speaker_name) {
+          setCloneSpeakerName(profile.speaker_name)
+        }
+      })
+      .catch(() => {})
+  }, [activePatientId])
+
+  // Seed default speaker & test phrase based on active patient profile
+  useEffect(() => {
+    const defaultSpeaker = activePatient?.relationships?.[0]?.name || (activePatientId === 'patient_kalyani' ? 'Meera' : 'Clara')
+    const defaultRelation = activePatient?.relationships?.[0]?.relation || 'Daughter'
+    if (!cloneSpeakerName) setCloneSpeakerName(defaultSpeaker)
+    if (!cloneSpeakerRelation) setCloneSpeakerRelation(defaultRelation)
+
+    const defaultTest = activePatientId === 'patient_kalyani'
+      ? 'வணக்கம் அம்மா, நான் மீரா பேசுறேன். இன்னைக்கு நல்லா ஓய்வெடுங்க, உங்க கூடவே இருக்கேன்.'
+      : `Hello ${activePatient?.preferred_name || activePatient?.name || 'Nell'}, it is ${defaultSpeaker}. I am right here with you, and everything is calm and safe.`
+    setTestSynthesizeText(defaultTest)
+  }, [activePatient, activePatientId])
+
+  const handleAudioFileUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const base64data = reader.result
+      const id = activePatient?.patient_id || 'patient_001'
+      localStorage.setItem(`kural_greeting_audio_${id}`, base64data)
+      setRecordedAudioUrl(base64data)
+      setCloneSuccessToast(`Loaded voice sample "${file.name}". Ready to train with Coqui XTTS-v2!`)
+      setTimeout(() => setCloneSuccessToast(null), 3500)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleCloneVoice = async () => {
+    if (!recordedAudioUrl) {
+      setCloneErrorToast('Please record a voice clip or upload an audio file first.')
+      setTimeout(() => setCloneErrorToast(null), 3000)
+      return
+    }
+    setIsCloningVoice(true)
+    setCloneErrorToast(null)
+    setCloneSuccessToast(null)
+
+    try {
+      const speaker = cloneSpeakerName.trim() || caregiverName
+      const relation = cloneSpeakerRelation.trim() || 'Caregiver'
+      const res = await cloneCaregiverVoice(activePatientId, {
+        speaker_name: speaker,
+        relation: relation,
+        audio_base64: recordedAudioUrl,
+        language: activePatient?.language || 'Tamil',
+        cadence_preset: selectedCadence,
+      })
+
+      const refreshed = await getVoiceProfile(activePatientId).catch(() => res)
+      setVoiceProfile(refreshed)
+      setCloneSuccessToast(
+        `✓ Voice model successfully trained for ${speaker}! Model: Coqui XTTS-v2. Companion Chat will now speak automatically in ${speaker}'s authentic voice.`
+      )
+      setTimeout(() => setCloneSuccessToast(null), 5000)
+    } catch (err) {
+      setCloneErrorToast(err.message || 'Failed to clone voice with model.')
+      setTimeout(() => setCloneErrorToast(null), 4000)
+    } finally {
+      setIsCloningVoice(false)
+    }
+  }
+
+  const handleTestClonedVoice = async () => {
+    if (isPlayingTestVoice) {
+      if (testAudioPlayerRef.current) {
+        testAudioPlayerRef.current.pause()
+        testAudioPlayerRef.current = null
+      }
+      setIsPlayingTestVoice(false)
+      return
+    }
+
+    setIsSynthesizingTest(true)
+    try {
+      const textToSynthesize = testSynthesizeText.trim() || `Hello, I am right here with you.`
+      const res = await synthesizeVoiceSpeech({
+        patient_id: activePatientId,
+        text: textToSynthesize,
+        language: activePatient?.language?.toLowerCase().includes('tamil') ? 'ta' : 'en',
+      })
+
+      if (res.audio_base64) {
+        if (testAudioPlayerRef.current) {
+          testAudioPlayerRef.current.pause()
+          testAudioPlayerRef.current = null
+        }
+        const audio = new Audio(`data:${res.content_type || 'audio/wav'};base64,${res.audio_base64}`)
+        testAudioPlayerRef.current = audio
+        setIsPlayingTestVoice(true)
+        audio.onended = () => setIsPlayingTestVoice(false)
+        audio.onerror = () => setIsPlayingTestVoice(false)
+        await audio.play()
+      } else {
+        alert('Synthesis returned without audio data.')
+      }
+    } catch (err) {
+      alert(`Speech synthesis error: ${err.message}`)
+    } finally {
+      setIsSynthesizingTest(false)
+    }
+  }
+
 
   const preferredName = activePatient?.preferred_name || activePatient?.name || 'Loved One'
   const initialLetter = preferredName.charAt(0).toUpperCase()
@@ -600,19 +729,85 @@ Generated with love by Kural Dementia Companion Care.
             </div>
           </div>
 
-          {/* Familiar Caregiver Voice Greeting */}
-          <div className="workspace-section-block">
+          {/* Caregiver Voice Cloning Studio (XTTS-v2 & LinuxONE Architecture) */}
+          <div className="workspace-section-block voice-cloning-studio-block">
             <div className="workspace-section-header">
-              <span className="anchors-eyebrow">FAMILIAR VOICE GREETING</span>
-              <span className="cadence-active-pill">
-                {recordedAudioUrl ? '● Custom Voice Linked' : '● Ready to Record'}
+              <span className="anchors-eyebrow">VOICE CLONING STUDIO (XTTS-v2)</span>
+              <span className="cadence-active-pill model-badge-pill">
+                ● Model: Coqui XTTS-v2 (LinuxONE)
               </span>
             </div>
             <p className="workspace-section-sub">
-              Record a 10-second personal greeting in your own voice. Hearing {caregiverName}&apos;s familiar voice provides instant grounding and reassurance for {preferredName}.
+              Train an open-source voice cloning model on {caregiverName}&apos;s voice. Every companion response for {preferredName} will speak automatically in this authentic loved one voice — no need to tap listen each time.
             </p>
 
-            <div className="voice-recorder-card">
+            {/* Active Voice Model Status Bar */}
+            <div className="voice-model-status-strip">
+              <div className="model-strip-left">
+                <span className="model-live-dot"></span>
+                <div>
+                  <span className="model-strip-title">
+                    Active Cloned Voice: <strong>{voiceProfile?.speaker_name || cloneSpeakerName || caregiverName}</strong>
+                  </span>
+                  <span className="model-strip-sub">
+                    {voiceProfile?.model === 'coqui-xtts-v2-linuxone'
+                      ? 'IBM LinuxONE Microservice • Auto-Play Active'
+                      : 'Calibrated Acoustic Embedding • Auto-Play Active'}
+                  </span>
+                </div>
+              </div>
+              <span className="model-strip-pill">
+                {voiceProfile?.voice_cloned ? '✓ Cloned & Ready' : '● Default Cloned'}
+              </span>
+            </div>
+
+            {cloneSuccessToast && (
+              <div className="banner banner-success-cloned">
+                {cloneSuccessToast}
+              </div>
+            )}
+
+            {cloneErrorToast && (
+              <div className="banner banner-error-cloned">
+                {cloneErrorToast}
+              </div>
+            )}
+
+            <div className="voice-cloning-card">
+              {/* Step 1: Speaker Identity */}
+              <div className="clone-step-row">
+                <span className="step-number-tag">Step 1</span>
+                <span className="step-label">Speaker Identity</span>
+              </div>
+              <div className="clone-inputs-grid">
+                <div className="clone-field">
+                  <label className="clone-label">Speaker Name (e.g. Meera, Clara)</label>
+                  <input
+                    type="text"
+                    className="clone-input"
+                    value={cloneSpeakerName}
+                    onChange={(e) => setCloneSpeakerName(e.target.value)}
+                    placeholder="Caregiver or loved one's name"
+                  />
+                </div>
+                <div className="clone-field">
+                  <label className="clone-label">Relationship to {preferredName}</label>
+                  <input
+                    type="text"
+                    className="clone-input"
+                    value={cloneSpeakerRelation}
+                    onChange={(e) => setCloneSpeakerRelation(e.target.value)}
+                    placeholder="e.g. Daughter, Son, Spouse"
+                  />
+                </div>
+              </div>
+
+              {/* Step 2: Voice Sample Input (Record or Upload) */}
+              <div className="clone-step-row" style={{ marginTop: '14px' }}>
+                <span className="step-number-tag">Step 2</span>
+                <span className="step-label">Provide Voice Sample (10–30s)</span>
+              </div>
+
               <div className="voice-recorder-status">
                 <div className={`recorder-mic-circle ${isRecording ? 'recording-pulse' : ''}`}>
                   {isRecording ? '🔴' : '🎙️'}
@@ -620,17 +815,17 @@ Generated with love by Kural Dementia Companion Care.
                 <div className="recorder-info">
                   <h4 className="recorder-title">
                     {isRecording
-                      ? 'Recording Family Greeting...'
+                      ? 'Recording Voice Sample...'
                       : recordedAudioUrl
-                      ? 'Custom Family Voice Note Saved'
-                      : 'Record 10s Reassurance Greeting'}
+                      ? 'Voice Sample Loaded & Ready'
+                      : 'Record or Upload Voice Sample'}
                   </h4>
                   <span className="recorder-timer">
                     {isRecording
-                      ? `00:0${recordingSeconds} / 00:10 (Speak warmly)`
+                      ? `00:0${recordingSeconds} / 00:10 (Speak naturally and calmly)`
                       : recordedAudioUrl
-                      ? 'Plays at start of companion session'
-                      : 'Tap Record to speak in your voice'}
+                      ? 'Sample stored for XTTS-v2 acoustic cloning'
+                      : 'Speak a few warm reassuring sentences or choose an audio file'}
                   </span>
                 </div>
               </div>
@@ -642,7 +837,7 @@ Generated with love by Kural Dementia Companion Care.
                     className="btn-stitch-primary btn-record-action"
                     onClick={startRecording}
                   >
-                    🎙️ {recordedAudioUrl ? 'Re-Record' : 'Record Greeting'}
+                    🎙️ {recordedAudioUrl ? 'Re-Record Sample' : 'Record Voice (10s)'}
                   </button>
                 ) : (
                   <button
@@ -650,16 +845,33 @@ Generated with love by Kural Dementia Companion Care.
                     className="btn-stitch-primary btn-stop-action"
                     onClick={stopRecording}
                   >
-                    ⏹ Stop &amp; Save
+                    ⏹ Stop &amp; Save Sample
                   </button>
                 )}
+
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="audio/*"
+                  style={{ display: 'none' }}
+                  onChange={handleAudioFileUpload}
+                />
+
+                <button
+                  type="button"
+                  className="btn-stitch-secondary"
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Upload an existing WAV, MP3, or M4A audio clip"
+                >
+                  📁 Upload Audio File
+                </button>
 
                 <button
                   type="button"
                   className={`btn-stitch-secondary btn-play-sample ${isPlayingGreeting ? 'preview-playing' : ''}`}
                   onClick={handlePlayRecordedGreeting}
                 >
-                  {isPlayingGreeting ? '🔊 Playing Greeting...' : '▶ Listen'}
+                  {isPlayingGreeting ? '🔊 Playing Sample...' : '▶ Listen Sample'}
                 </button>
 
                 {recordedAudioUrl && !isRecording && (
@@ -667,11 +879,75 @@ Generated with love by Kural Dementia Companion Care.
                     type="button"
                     className="btn-delete-audio"
                     onClick={handleDeleteGreeting}
-                    title="Remove custom audio recording"
+                    title="Remove voice sample"
                   >
                     🗑️ Reset
                   </button>
                 )}
+              </div>
+
+              {/* Step 3: Train Cloned Model Button */}
+              <div className="clone-submit-strip">
+                <button
+                  type="button"
+                  className="btn-stitch-primary btn-clone-model-action"
+                  onClick={handleCloneVoice}
+                  disabled={isCloningVoice || !recordedAudioUrl}
+                >
+                  {isCloningVoice ? '⏳ Extracting XTTS-v2 Speaker Embeddings...' : '🚀 Clone Voice with Coqui XTTS-v2'}
+                </button>
+                <span className="clone-auto-play-note">
+                  ⚡ Auto-Play Enabled: Future Companion answers will play aloud immediately in this voice.
+                </span>
+              </div>
+
+              {/* Step 4: Verification & Test Synthesis */}
+              <div className="clone-test-section">
+                <div className="clone-step-row">
+                  <span className="step-number-tag">Step 3</span>
+                  <span className="step-label">Test Cloned Speech Synthesis</span>
+                </div>
+                <div className="test-synthesis-box">
+                  <input
+                    type="text"
+                    className="test-phrase-input"
+                    value={testSynthesizeText}
+                    onChange={(e) => setTestSynthesizeText(e.target.value)}
+                    placeholder="Enter sentence for cloned voice to speak..."
+                  />
+                  <button
+                    type="button"
+                    className={`btn-test-synthesize ${isPlayingTestVoice ? 'playing-test' : ''}`}
+                    onClick={handleTestClonedVoice}
+                    disabled={isSynthesizingTest}
+                  >
+                    {isSynthesizingTest
+                      ? 'Synthesizing...'
+                      : isPlayingTestVoice
+                      ? '⏹ Stop Playing'
+                      : '▶ Test Cloned Voice'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Architecture Specifications */}
+              <div className="linuxone-specs-grid">
+                <div className="spec-item">
+                  <span className="spec-label">Model Engine</span>
+                  <span className="spec-value">Coqui XTTS-v2</span>
+                </div>
+                <div className="spec-item">
+                  <span className="spec-label">Host Infrastructure</span>
+                  <span className="spec-value">LinuxONE s390x / Container</span>
+                </div>
+                <div className="spec-item">
+                  <span className="spec-label">Audio Auto-Play</span>
+                  <span className="spec-value text-green">Always ON (Zero Click)</span>
+                </div>
+                <div className="spec-item">
+                  <span className="spec-label">Fallback Safety</span>
+                  <span className="spec-value">Calibrated Synthesis Active</span>
+                </div>
               </div>
             </div>
           </div>

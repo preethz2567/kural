@@ -9,7 +9,7 @@ backend_dir = Path(__file__).resolve().parent
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
-from routers import patient, chat
+from routers import patient, chat, voice
 
 app = FastAPI(title="Kural API")
 
@@ -28,6 +28,7 @@ app.add_middleware(
 
 app.include_router(patient.router)
 app.include_router(chat.router)
+app.include_router(voice.router)
 
 @app.get("/ping")
 async def ping():

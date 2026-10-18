@@ -15,6 +15,7 @@ if str(backend_dir) not in sys.path:
 from store import patient_store, session_store
 from services.prompt_builder import build_system_prompt
 from services.distress_detector import score_distress, handle_escalation
+from services import voice_service
 
 load_dotenv()
 
@@ -34,6 +35,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: str
     distress: Optional[Dict[str, Any]] = None
+    audio: Optional[Dict[str, Any]] = None
 
 def generate_mock_response(preferred_name: str, distress_level: str) -> str:
     """
@@ -81,7 +83,8 @@ async def chat_with_patient(patient_id: str, request: ChatRequest):
     if not client:
         bot_reply = generate_mock_response(preferred_name, distress_result.get("level", "none"))
         session_store.append_turn(request.session_id, "assistant", bot_reply, distress=distress_result)
-        return ChatResponse(response=bot_reply, distress=distress_result)
+        audio_payload = await voice_service.synthesize_speech(patient_id, bot_reply)
+        return ChatResponse(response=bot_reply, distress=distress_result, audio=audio_payload)
 
     # 4. Live AI Mode
     # Shift tone dynamically if distress is high
@@ -112,8 +115,9 @@ async def chat_with_patient(patient_id: str, request: ChatRequest):
             bot_reply = "I am right here with you, Nell."
 
         session_store.append_turn(request.session_id, "assistant", bot_reply, distress=distress_result)
+        audio_payload = await voice_service.synthesize_speech(patient_id, bot_reply)
         
-        return ChatResponse(response=bot_reply, distress=distress_result)
+        return ChatResponse(response=bot_reply, distress=distress_result, audio=audio_payload)
     except Exception as e:
         # Return a clear, safe API error without misrepresenting API failure as a live response
         raise HTTPException(status_code=502, detail=f"Live AI service error: {str(e)}")
