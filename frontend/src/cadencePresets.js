@@ -1,0 +1,32 @@
+export const CADENCE_PRESETS = {
+  maternal: {
+    id: 'maternal',
+    title: 'Gentle Maternal',
+    subtitle: 'Warm & Unhurried',
+    badge: 'Standard Maternal',
+    rate: 0.82,
+    pitch: 1.05,
+    description: 'Slow, soothing maternal warmth with comforting reassurances.',
+    icon: '🌸',
+  },
+  slow: {
+    id: 'slow',
+    title: 'Slow & Deliberate',
+    subtitle: 'High Articulation',
+    badge: 'Late Stage Focus',
+    rate: 0.72,
+    pitch: 1.00,
+    description: 'Crystal-clear articulation with relaxed spacing for sensory processing.',
+    icon: '🕊️',
+  },
+  story: {
+    id: 'story',
+    title: 'Comforting Storyteller',
+    subtitle: 'Melodic & Engaging',
+    badge: 'Reminiscence Flow',
+    rate: 0.88,
+    pitch: 0.96,
+    description: 'Warm conversational melody, wonderful for recalling beloved family stories.',
+    icon: '📖',
+  },
+}

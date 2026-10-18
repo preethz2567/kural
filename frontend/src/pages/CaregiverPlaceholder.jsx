@@ -1,40 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { listPatients, getVoiceProfile, cloneCaregiverVoice, synthesizeVoiceSpeech } from '../api.js'
+import { CADENCE_PRESETS } from '../cadencePresets.js'
 import '../App.css'
-
-export const CADENCE_PRESETS = {
-  maternal: {
-    id: 'maternal',
-    title: 'Gentle Maternal',
-    subtitle: 'Warm & Unhurried',
-    badge: 'Standard Maternal',
-    rate: 0.82,
-    pitch: 1.05,
-    description: 'Slow, soothing maternal warmth with comforting reassurances.',
-    icon: '🌸',
-  },
-  slow: {
-    id: 'slow',
-    title: 'Slow & Deliberate',
-    subtitle: 'High Articulation',
-    badge: 'Late Stage Focus',
-    rate: 0.72,
-    pitch: 1.00,
-    description: 'Crystal-clear articulation with relaxed spacing for sensory processing.',
-    icon: '🕊️',
-  },
-  story: {
-    id: 'story',
-    title: 'Comforting Storyteller',
-    subtitle: 'Melodic & Engaging',
-    badge: 'Reminiscence Flow',
-    rate: 0.88,
-    pitch: 0.96,
-    description: 'Warm conversational melody, wonderful for recalling beloved family stories.',
-    icon: '📖',
-  },
-}
 
 const DEFAULT_OBSERVATION_LOGS = [
   {
@@ -512,26 +480,63 @@ Generated with love by Kural Dementia Companion Care.
     }
   }
 
+  const speakFallbackSpeech = (textToSpeak) => {
+    if (!('speechSynthesis' in window)) return
+    speechSynthesis.cancel()
+    const clean = textToSpeak.replace(/\[.*?\]/g, '').trim()
+    const utterance = new SpeechSynthesisUtterance(clean)
+    const preset = CADENCE_PRESETS[selectedCadence] || CADENCE_PRESETS.maternal
+    utterance.rate = preset.rate
+    utterance.pitch = preset.pitch
+
+    const isTamil = activePatientId === 'patient_kalyani' || (activePatient?.language && activePatient.language.toLowerCase().includes('tamil'))
+    const voices = speechSynthesis.getVoices()
+    if (isTamil) {
+      utterance.lang = 'ta-IN'
+      const taVoice = voices.find((v) => v.lang.startsWith('ta'))
+      if (taVoice) utterance.voice = taVoice
+    } else {
+      utterance.lang = 'en-US'
+      const gentleVoice = voices.find(
+        (v) =>
+          v.lang.startsWith('en') &&
+          (v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Google') || v.name.includes('Female'))
+      )
+      if (gentleVoice) utterance.voice = gentleVoice
+    }
+
+    setIsPlayingTestVoice(true)
+    utterance.onend = () => setIsPlayingTestVoice(false)
+    utterance.onerror = () => setIsPlayingTestVoice(false)
+    speechSynthesis.speak(utterance)
+  }
+
   const handleTestClonedVoice = async () => {
     if (isPlayingTestVoice) {
       if (testAudioPlayerRef.current) {
         testAudioPlayerRef.current.pause()
         testAudioPlayerRef.current = null
       }
+      if ('speechSynthesis' in window) {
+        speechSynthesis.cancel()
+      }
       setIsPlayingTestVoice(false)
       return
     }
 
     setIsSynthesizingTest(true)
+    const textToSynthesize = testSynthesizeText.trim() || `Hello, I am right here with you.`
+    let played = false
+
     try {
-      const textToSynthesize = testSynthesizeText.trim() || `Hello, I am right here with you.`
+      const isTamil = activePatientId === 'patient_kalyani' || (activePatient?.language && activePatient.language.toLowerCase().includes('tamil'))
       const res = await synthesizeVoiceSpeech({
         patient_id: activePatientId,
         text: textToSynthesize,
-        language: activePatient?.language?.toLowerCase().includes('tamil') ? 'ta' : 'en',
+        language: isTamil ? 'ta' : 'en',
       })
 
-      if (res.audio_base64) {
+      if (res?.audio_base64) {
         if (testAudioPlayerRef.current) {
           testAudioPlayerRef.current.pause()
           testAudioPlayerRef.current = null
@@ -541,15 +546,21 @@ Generated with love by Kural Dementia Companion Care.
         testAudioPlayerRef.current = audio
         setIsPlayingTestVoice(true)
         audio.onended = () => setIsPlayingTestVoice(false)
-        audio.onerror = () => setIsPlayingTestVoice(false)
+        audio.onerror = () => {
+          setIsPlayingTestVoice(false)
+          speakFallbackSpeech(textToSynthesize)
+        }
         await audio.play()
-      } else {
-        alert('Synthesis returned without audio data.')
+        played = true
       }
     } catch (err) {
-      alert(`Speech synthesis error: ${err.message}`)
+      console.warn('[Voice Studio] Backend synthesis error, falling back to local speech:', err)
     } finally {
       setIsSynthesizingTest(false)
+    }
+
+    if (!played) {
+      speakFallbackSpeech(textToSynthesize)
     }
   }
 

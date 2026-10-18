@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { checkBackendHealth, fetchPatient, sendChatMessage } from '../api.js'
-import { CADENCE_PRESETS } from './CaregiverPlaceholder.jsx'
+import { CADENCE_PRESETS } from '../cadencePresets.js'
 import '../App.css'
 
 function createSessionId(prefix = 'sess') {
