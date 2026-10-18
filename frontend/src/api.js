@@ -52,6 +52,21 @@ export async function checkBackendHealth({ signal } = {}) {
 }
 
 /**
+ * Fetch all available profiles from GET /patient
+ * @param {object} [opts]
+ * @param {AbortSignal} [opts.signal]
+ * @returns {Promise<Array<object>>} List of patient profiles
+ */
+export async function listPatients({ signal } = {}) {
+  const res = await fetch(apiUrl('/patient'), { signal })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.detail || `Failed to list profiles with HTTP ${res.status}`)
+  }
+  return res.json()
+}
+
+/**
  * Fetch patient context from GET /patient/:patientId
  * @param {string} patientId
  * @param {object} [opts]
@@ -63,6 +78,49 @@ export async function fetchPatient(patientId, { signal } = {}) {
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     throw new Error(body.detail || `Patient fetch failed with HTTP ${res.status}`)
+  }
+  return res.json()
+}
+
+/**
+ * Create a new patient profile via POST /patient
+ * @param {object} patientData
+ * @param {object} [opts]
+ * @param {AbortSignal} [opts.signal]
+ * @returns {Promise<object>} Created Patient JSON
+ */
+export async function createPatient(patientData, { signal } = {}) {
+  const res = await fetch(apiUrl('/patient'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patientData),
+    signal,
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.detail || `Failed to create profile (HTTP ${res.status})`)
+  }
+  return res.json()
+}
+
+/**
+ * Update an existing patient profile via PUT /patient/:patientId
+ * @param {string} patientId
+ * @param {object} patientData
+ * @param {object} [opts]
+ * @param {AbortSignal} [opts.signal]
+ * @returns {Promise<object>} Updated Patient JSON
+ */
+export async function updatePatient(patientId, patientData, { signal } = {}) {
+  const res = await fetch(apiUrl(`/patient/${patientId}`), {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patientData),
+    signal,
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.detail || `Failed to update profile (HTTP ${res.status})`)
   }
   return res.json()
 }

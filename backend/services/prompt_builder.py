@@ -21,6 +21,17 @@ def build_system_prompt(patient: Patient) -> str:
         profile_lines.append("- Significant events:")
         for e in patient.significant_events:
             profile_lines.append(f"  * {e}")
+
+    if patient.communication_style:
+        profile_lines.append(f"- Preferred communication style: {patient.communication_style}")
+
+    if patient.calming_strategies:
+        profile_lines.append("- Calming strategies and soothing topics:")
+        for s in patient.calming_strategies:
+            profile_lines.append(f"  * {s}")
+
+    if patient.caregiver_notes:
+        profile_lines.append(f"- Caregiver notes: {patient.caregiver_notes}")
             
     if patient.preferences.likes or patient.preferences.dislikes:
         profile_lines.append("- Preferences:")
@@ -50,6 +61,7 @@ def build_system_prompt(patient: Patient) -> str:
     elif patient.stage == StageEnum.late:
         stage_block = LATE_STAGE.format(preferred_name=preferred_name)
     else:
-        stage_block = ""
+        # Default/unknown stage: use a gentle, patient-first demeanor
+        stage_block = MID_STAGE.format(preferred_name=preferred_name)
 
     return prompt + "\n" + stage_block

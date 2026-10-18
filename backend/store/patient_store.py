@@ -15,6 +15,17 @@ def get_patient(patient_id: str) -> Patient:
         data = json.load(f)
     return Patient(**data)
 
+def list_patients() -> list[Patient]:
+    os.makedirs(DATA_DIR, exist_ok=True)
+    patients = []
+    for fname in os.listdir(DATA_DIR):
+        if fname.endswith(".json"):
+            pid = fname[:-5]
+            p = get_patient(pid)
+            if p:
+                patients.append(p)
+    return patients
+
 def save_patient(patient: Patient) -> None:
     file_path = get_patient_file_path(patient.patient_id)
     # Ensure data directory exists

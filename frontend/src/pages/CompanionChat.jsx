@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { checkBackendHealth, fetchPatient, sendChatMessage } from '../api.js'
 import '../App.css'
 
-function createSessionId() {
-  return 'sess_' + Math.random().toString(36).substring(2, 10)
+function createSessionId(prefix = 'sess') {
+  return `${prefix}_${Math.random().toString(36).substring(2, 10)}`
 }
 
 function formatTime(isoString) {
@@ -16,38 +16,29 @@ function formatTime(isoString) {
   }
 }
 
-const CONVERSATION_STARTERS = [
-  { label: '🌸 The Garden', prompt: 'Tell me about the conservatory garden and flowers.' },
-  { label: '☀️ Afternoon Sunshine', prompt: 'How is the afternoon sunshine today?' },
-  { label: '☕ Quiet Tea Time', prompt: 'I would love to have a quiet cup of tea and chat.' },
-  { label: '🎶 Gentle Music', prompt: 'What is a calming memory or song we can think about?' },
-]
-
-const PATIENT_ID = 'patient_001'
-
 export default function CompanionChat() {
-  const [sessionId, setSessionId] = useState(createSessionId)
-  const [messages, setMessages] = useState([
-    {
-      id: 'welcome_1',
-      sender: 'companion',
-      text: "Hello, Nell. It is wonderful to sit together today. Take your time, and tell me whatever is on your mind. I am right here with you.",
-      timestamp: new Date().toISOString(),
-      isMock: true,
-    },
-  ])
+  const navigate = useNavigate()
+  
+  // Selected patient ID from localStorage, defaults to patient_001
+  const [activePatientId, setActivePatientId] = useState(() => {
+    return localStorage.getItem('kural_active_patient_id') || 'patient_001'
+  })
+
+  const [sessionId, setSessionId] = useState(() => createSessionId(activePatientId))
+  const [patientData, setPatientData] = useState(null)
+  const [messages, setMessages] = useState([])
   const [inputText, setInputText] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
-  // null = checking, true = online, false = offline, 'retrying' = waking up (Render cold-start)
   const [backendStatus, setBackendStatus] = useState(null)
-  const [patientContext, setPatientContext] = useState('Nell · Mid Stage')
+  const [patientContext, setPatientContext] = useState('Loading companion...')
   const [latestDistress, setLatestDistress] = useState({ level: 'none', reason: 'Awaiting user input' })
-  const [isMockMode, setIsMockMode] = useState(true)
+  const [isMockMode, setIsMockMode] = useState(false)
 
   const messagesEndRef = useRef(null)
   const textareaRef = useRef(null)
 
+  // Initialize or reload when activePatientId changes
   useEffect(() => {
     const controller = new AbortController()
     let retryTimer = null
@@ -59,7 +50,6 @@ export default function CompanionChat() {
         if (result.online) {
           setBackendStatus(true)
         } else if (result.retrying) {
-          // Render cold-start — show warming-up banner and retry once after 8 s
           setBackendStatus('retrying')
           retryTimer = setTimeout(async () => {
             if (controller.signal.aborted) return
@@ -73,16 +63,41 @@ export default function CompanionChat() {
         if (!controller.signal.aborted) setBackendStatus(false)
       }
 
-      // 2. Patient context (non-blocking; does not affect backendStatus)
+      // 2. Fetch specific person's profile
       try {
-        const patient = await fetchPatient(PATIENT_ID, { signal: controller.signal })
-        const preferred = patient.preferred_name || patient.name || 'Nell'
-        const stage = patient.stage
+        const patient = await fetchPatient(activePatientId, { signal: controller.signal })
+        setPatientData(patient)
+        const preferred = patient.preferred_name || patient.name || 'Friend'
+        const stage = patient.stage && patient.stage !== 'unknown'
           ? `${patient.stage.charAt(0).toUpperCase() + patient.stage.slice(1)} Stage`
           : 'Stage Adaptive'
         setPatientContext(`${preferred} · ${stage}`)
+
+        // Create warm personalized welcome message
+        const welcomeText = patient.cherished_memories?.length > 0
+          ? `Hello, ${preferred}. It is lovely to sit and talk with you. I am right here keeping you company. How are you feeling today?`
+          : `Hello, ${preferred}. Take your time, and tell me whatever is on your mind. I am right here with you.`
+
+        setMessages([
+          {
+            id: 'welcome_' + Date.now(),
+            sender: 'companion',
+            text: welcomeText,
+            timestamp: new Date().toISOString(),
+            isMock: false,
+          },
+        ])
       } catch {
         setPatientContext('Nell · Mid Stage')
+        setMessages([
+          {
+            id: 'welcome_fallback',
+            sender: 'companion',
+            text: "Hello. It is wonderful to sit together today. Take your time, and tell me whatever is on your mind.",
+            timestamp: new Date().toISOString(),
+            isMock: false,
+          },
+        ])
       }
     }
 
@@ -91,11 +106,24 @@ export default function CompanionChat() {
       controller.abort()
       if (retryTimer) clearTimeout(retryTimer)
     }
-  }, [])
+  }, [activePatientId])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isLoading])
+
+  // Dynamic conversation starters based on the person's profile
+  const conversationStarters = patientData?.preferences?.likes?.length > 0
+    ? patientData.preferences.likes.slice(0, 4).map((like) => ({
+        label: `🌸 ${like.charAt(0).toUpperCase() + like.slice(1)}`,
+        prompt: `Tell me about ${like}. It always brings a quiet sense of comfort.`,
+      }))
+    : [
+        { label: '🌸 The Garden', prompt: 'Tell me about the conservatory garden and flowers.' },
+        { label: '☀️ Afternoon Sunshine', prompt: 'How is the afternoon sunshine today?' },
+        { label: '☕ Quiet Tea Time', prompt: 'I would love to have a quiet cup of tea and chat.' },
+        { label: '🎶 Gentle Music', prompt: 'What is a calming memory or song we can think about?' },
+      ]
 
   const handleSend = async (customPrompt) => {
     const textToSend = typeof customPrompt === 'string' ? customPrompt : inputText
@@ -117,7 +145,7 @@ export default function CompanionChat() {
     setError(null)
 
     try {
-      const data = await sendChatMessage(PATIENT_ID, {
+      const data = await sendChatMessage(activePatientId, {
         session_id: sessionId,
         message: trimmed,
       })
@@ -157,15 +185,16 @@ export default function CompanionChat() {
   }
 
   const handleResetConversation = () => {
-    const newId = createSessionId()
+    const newId = createSessionId(activePatientId)
     setSessionId(newId)
+    const preferred = patientData?.preferred_name || patientData?.name || 'Friend'
     setMessages([
       {
         id: 'welcome_' + Date.now(),
         sender: 'companion',
-        text: "Hello, Nell. A fresh conversation has started. Take your time, and tell me whatever is on your mind.",
+        text: `Hello, ${preferred}. A fresh conversation has started. Take your time, and tell me whatever is on your mind.`,
         timestamp: new Date().toISOString(),
-        isMock: true,
+        isMock: false,
       },
     ])
     setLatestDistress({ level: 'none', reason: 'Fresh session started' })
@@ -188,10 +217,16 @@ export default function CompanionChat() {
         </div>
 
         <div className="header-controls">
-          <div className="patient-pill" title="Current Patient Context (Synthetic Fixture)">
+          <button
+            type="button"
+            className="patient-pill"
+            onClick={() => navigate('/profiles')}
+            title="Click to switch or manage person profiles"
+          >
             <span className="dot dot-active"></span>
             {patientContext}
-          </div>
+            <span className="switch-arrow">⇄</span>
+          </button>
 
           <div
             className={`mode-badge ${isMockMode ? 'mode-mock' : 'mode-live'}`}
@@ -206,7 +241,7 @@ export default function CompanionChat() {
             title="Start a new conversation session"
             type="button"
           >
-            Reset Session
+            Reset
           </button>
         </div>
       </header>
@@ -258,7 +293,7 @@ export default function CompanionChat() {
             <div className="conversation-starters-card">
               <p className="starters-prompt">You can type below or choose a peaceful topic to begin:</p>
               <div className="starters-grid">
-                {CONVERSATION_STARTERS.map((starter) => (
+                {conversationStarters.map((starter) => (
                   <button
                     key={starter.label}
                     type="button"
