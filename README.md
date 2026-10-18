@@ -2,7 +2,7 @@
 **குரல் • /ku-ral/**  
 *noun* : Voice; speech; song; an ancient Tamil couplet of wisdom, human dignity, and compassion.
 
-**Kural** is an AI-powered voice companion and cognitive grounding platform specifically engineered for individuals living with Alzheimer's disease and progressive dementia. In an era where conversational AI often relies on generic, synthetic voices and ungrounded interactions that disorient vulnerable elders, Kural acts as an emotional sanctuary—cloning the authentic voices of loved ones and primary caregivers while enforcing clinical communication protocols to soothe distress, ground memory lapses, and preserve personal identity.
+**Kural** is an AI-powered voice companion and cognitive grounding platform specifically engineered for individuals living with Alzheimer's disease and progressive dementia. In an era where conversational AI often relies on generic, synthetic voices and ungrounded interactions that disorient vulnerable elders, Kural acts as an emotional sanctuary-cloning the authentic voices of loved ones and primary caregivers while enforcing clinical communication protocols to soothe distress, ground memory lapses, and preserve personal identity.
 
 ---
 
@@ -12,7 +12,7 @@ Kural is built on a decoupled, resilient microservices architecture designed for
 
 ```
                                 ┌──────────────────────────────────────────────────┐
-                                │             Frontend Client (Vite / React)        │
+                                │             Frontend Client (Vite / React)       │
                                 │   - Mobile Device Viewport (iPhone-Frame)        │
                                 │   - Dual-Engine Web Audio (PCM + Blob)           │
                                 │   - Zero-Touch Voice Auto-Play on Response       │
@@ -145,4 +145,6 @@ A `render.yaml` blueprint is included for 1-click full-stack deployment on Rende
 
 ---
 
-**Kural — Bridging the Caregiver Gap with Voice, Dignity, and Compassion.**
+**Kural - Bridging the Caregiver Gap with Voice, Dignity, and Compassion.**
+Built with love, by Team Polaris.
+
