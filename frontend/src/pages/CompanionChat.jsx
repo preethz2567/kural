@@ -18,8 +18,7 @@ function formatTime(isoString) {
 
 export default function CompanionChat() {
   const navigate = useNavigate()
-  
-  // Selected patient ID from localStorage, defaults to patient_001
+
   const [activePatientId, setActivePatientId] = useState(() => {
     return localStorage.getItem('kural_active_patient_id') || 'patient_001'
   })
@@ -31,69 +30,42 @@ export default function CompanionChat() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
   const [backendStatus, setBackendStatus] = useState(null)
-  const [patientContext, setPatientContext] = useState('Loading companion...')
-  const [latestDistress, setLatestDistress] = useState({ level: 'none', reason: 'Awaiting user input' })
+  const [latestDistress, setLatestDistress] = useState({ level: 'none', reason: 'Awaiting input' })
   const [isMockMode, setIsMockMode] = useState(false)
 
   const messagesEndRef = useRef(null)
   const textareaRef = useRef(null)
 
-  // Initialize or reload when activePatientId changes
   useEffect(() => {
     const controller = new AbortController()
-    let retryTimer = null
 
     async function init() {
-      // 1. Health check
       try {
         const result = await checkBackendHealth({ signal: controller.signal })
-        if (result.online) {
-          setBackendStatus(true)
-        } else if (result.retrying) {
-          setBackendStatus('retrying')
-          retryTimer = setTimeout(async () => {
-            if (controller.signal.aborted) return
-            const retry = await checkBackendHealth({ signal: controller.signal }).catch(() => ({ online: false, retrying: false }))
-            if (!controller.signal.aborted) setBackendStatus(retry.online ? true : false)
-          }, 8000)
-        } else {
-          setBackendStatus(false)
-        }
+        setBackendStatus(result.online ? true : result.retrying ? 'retrying' : false)
       } catch {
-        if (!controller.signal.aborted) setBackendStatus(false)
+        setBackendStatus(false)
       }
 
-      // 2. Fetch specific person's profile
       try {
         const patient = await fetchPatient(activePatientId, { signal: controller.signal })
         setPatientData(patient)
-        const preferred = patient.preferred_name || patient.name || 'Friend'
-        const stage = patient.stage && patient.stage !== 'unknown'
-          ? `${patient.stage.charAt(0).toUpperCase() + patient.stage.slice(1)} Stage`
-          : 'Stage Adaptive'
-        setPatientContext(`${preferred} · ${stage}`)
-
-        // Create warm personalized welcome message
-        const welcomeText = patient.cherished_memories?.length > 0
-          ? `Hello, ${preferred}. It is lovely to sit and talk with you. I am right here keeping you company. How are you feeling today?`
-          : `Hello, ${preferred}. Take your time, and tell me whatever is on your mind. I am right here with you.`
-
+        const preferred = patient.preferred_name || patient.name || 'Amma'
         setMessages([
           {
             id: 'welcome_' + Date.now(),
             sender: 'companion',
-            text: welcomeText,
+            text: `Hello, ${preferred}. It is lovely to sit together today. Take your time, and tell me whatever is on your mind. I am right here with you.`,
             timestamp: new Date().toISOString(),
             isMock: false,
           },
         ])
       } catch {
-        setPatientContext('Nell · Mid Stage')
         setMessages([
           {
             id: 'welcome_fallback',
             sender: 'companion',
-            text: "Hello. It is wonderful to sit together today. Take your time, and tell me whatever is on your mind.",
+            text: 'Hello. It is wonderful to sit together today. Take your time, and tell me whatever is on your mind.',
             timestamp: new Date().toISOString(),
             isMock: false,
           },
@@ -102,28 +74,12 @@ export default function CompanionChat() {
     }
 
     init()
-    return () => {
-      controller.abort()
-      if (retryTimer) clearTimeout(retryTimer)
-    }
+    return () => controller.abort()
   }, [activePatientId])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isLoading])
-
-  // Dynamic conversation starters based on the person's profile
-  const conversationStarters = patientData?.preferences?.likes?.length > 0
-    ? patientData.preferences.likes.slice(0, 4).map((like) => ({
-        label: `🌸 ${like.charAt(0).toUpperCase() + like.slice(1)}`,
-        prompt: `Tell me about ${like}. It always brings a quiet sense of comfort.`,
-      }))
-    : [
-        { label: '🌸 The Garden', prompt: 'Tell me about the conservatory garden and flowers.' },
-        { label: '☀️ Afternoon Sunshine', prompt: 'How is the afternoon sunshine today?' },
-        { label: '☕ Quiet Tea Time', prompt: 'I would love to have a quiet cup of tea and chat.' },
-        { label: '🎶 Gentle Music', prompt: 'What is a calming memory or song we can think about?' },
-      ]
 
   const handleSend = async (customPrompt) => {
     const textToSend = typeof customPrompt === 'string' ? customPrompt : inputText
@@ -152,7 +108,6 @@ export default function CompanionChat() {
 
       const replyText = data.response || 'No response returned.'
       const isMock = replyText.includes('[Mock Companion]') || replyText.includes('[Mocked')
-
       setIsMockMode(isMock)
 
       if (data.distress) {
@@ -170,7 +125,7 @@ export default function CompanionChat() {
 
       setMessages((prev) => [...prev, companionMessage])
     } catch (err) {
-      setError(err.message || 'Unable to connect to companion service. Please check backend status.')
+      setError(err.message || 'Unable to connect to companion service.')
     } finally {
       setIsLoading(false)
       textareaRef.current?.focus()
@@ -187,12 +142,12 @@ export default function CompanionChat() {
   const handleResetConversation = () => {
     const newId = createSessionId(activePatientId)
     setSessionId(newId)
-    const preferred = patientData?.preferred_name || patientData?.name || 'Friend'
+    const preferred = patientData?.preferred_name || patientData?.name || 'Amma'
     setMessages([
       {
         id: 'welcome_' + Date.now(),
         sender: 'companion',
-        text: `Hello, ${preferred}. A fresh conversation has started. Take your time, and tell me whatever is on your mind.`,
+        text: `Hello, ${preferred}. A fresh conversation has started. Tell me whatever is on your heart.`,
         timestamp: new Date().toISOString(),
         isMock: false,
       },
@@ -201,62 +156,228 @@ export default function CompanionChat() {
     setError(null)
   }
 
+  const preferredName = patientData?.preferred_name || patientData?.name || 'Amma'
+  const stageDisplay = patientData?.stage ? `${patientData.stage.charAt(0).toUpperCase() + patientData.stage.slice(1)} Stage` : 'Mild Cognitive Impairment'
+
   return (
-    <div className="kural-app-container">
-      {/* Header Bar */}
-      <header className="kural-header">
-        <div className="header-brand">
-          <Link to="/" className="btn-nav-home" title="Back to Kural home">
-            ← Home
+    <div className="stitch-mobile-frame stitch-companion-frame">
+      {/* Top Bar Header */}
+      <header className="stitch-chat-header">
+        <div className="chat-header-brand">
+          <Link to="/" className="chat-back-btn" title="Back to Kural Home">
+            ←
           </Link>
-          <div className="logo-badge" aria-hidden="true">K</div>
-          <div>
-            <h1 className="header-title">Kural</h1>
-            <p className="header-subtitle">Warm, Stage-Adaptive AI Companion</p>
+          <div className="chat-brand-tag">
+            <span className="brand-tamil">குரல்</span>
+            <span className="brand-kural">KURAL</span>
           </div>
+          <span className="header-divider-v">|</span>
+          <span className="chat-header-sub">Family Connection</span>
         </div>
 
-        <div className="header-controls">
-          <button
-            type="button"
-            className="patient-pill"
-            onClick={() => navigate('/profiles')}
-            title="Click to switch or manage person profiles"
-          >
-            <span className="dot dot-active"></span>
-            {patientContext}
-            <span className="switch-arrow">⇄</span>
-          </button>
-
-          <div
-            className={`mode-badge ${isMockMode ? 'mode-mock' : 'mode-live'}`}
-            title={isMockMode ? 'Running in offline prototype mock mode' : 'Connected to live Claude AI'}
-          >
-            {isMockMode ? 'Mock Mode' : 'Live Claude AI'}
+        <div className="chat-header-person">
+          <div className="person-header-info">
+            <span className="person-header-name">{preferredName}</span>
+            <span className="person-header-status">
+              <span className="status-dot-green"></span> Active
+            </span>
           </div>
-
           <button
-            className="btn-reset"
-            onClick={handleResetConversation}
-            title="Start a new conversation session"
             type="button"
+            className="header-avatar-btn"
+            onClick={() => navigate('/profiles')}
+            title="Switch profile"
           >
-            Reset
+            <img src="/amma_hero.png" alt="Amma" className="header-avatar-img" />
           </button>
         </div>
       </header>
 
-      {/* Main Chat Area */}
-      <main className="chat-viewport">
-        {/* Backend status banners */}
+      {/* Intergenerational Link Banner */}
+      <div className="intergenerational-pill-row">
+        <div className="intergenerational-left">
+          <span className="heart-circle-dark">♥</span>
+          <div>
+            <div className="intergenerational-eyebrow">INTERGENERATIONAL LINK</div>
+            <div className="intergenerational-names">Meera &amp; {preferredName}</div>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="btn-status-pill"
+          onClick={() => navigate('/profiles')}
+        >
+          ● Switch Profile
+        </button>
+      </div>
+
+      {/* Main Section Banner */}
+      <section className="companion-hero-callout">
+        <h1 className="companion-hero-title">Stay close, even from afar.</h1>
+        <p className="companion-hero-sub">
+          Small messages can become familiar, reassuring moments in their day.
+        </p>
+
+        {/* Hero Card Container */}
+        <div className="hero-portrait-card">
+          <img
+            src="/amma_hero.png"
+            alt="Family holding hands warmly"
+            className="hero-portrait-image"
+          />
+          <div className="portrait-overlay-strip">
+            <div className="overlay-person-badge">
+              <img src="/amma_hero.png" alt="Amma" className="overlay-mini-avatar" />
+              <div>
+                <div className="overlay-name-row">
+                  <span className="overlay-name">{preferredName}</span>
+                  <span className="connected-chip">• Connected</span>
+                </div>
+                <div className="overlay-stage">{stageDisplay} (Stage Adaptive)</div>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="refresh-circle-btn"
+              onClick={handleResetConversation}
+              title="Reset conversation"
+            >
+              🔄
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Kural Suggestion Compass Card */}
+      <section className="kural-suggestion-card">
+        <div className="suggestion-top-row">
+          <span className="suggestion-badge">✪ KURAL&apos;S SUGGESTION</span>
+          <span className="compass-pill">Stage Compass</span>
+        </div>
+        <h2 className="suggestion-heading">A little guidance for today</h2>
+        <p className="suggestion-body">
+          &ldquo;A calm voice and familiar topics can make conversations feel easier. Mention today&apos;s weather, family names, or simple afternoon tea rituals.&rdquo;
+        </p>
+        <div className="suggestion-footer-row">
+          <span className="suggestion-recap-text">Integrated into companion pacing</span>
+          <button
+            type="button"
+            className="apply-prompt-btn"
+            onClick={() => handleSend("Tell me about a peaceful morning, sipping warm tea and listening to gentle music.")}
+          >
+            Apply prompt ↗
+          </button>
+        </div>
+      </section>
+
+      {/* Emotional Anchors Grid (Direct from Stitch Reference 2) */}
+      <section className="emotional-anchors-section">
+        <div className="anchors-header-block">
+          <span className="anchors-eyebrow">EMOTIONAL ANCHORS</span>
+          <h2 className="anchors-title">Little things they know by heart.</h2>
+          <p className="anchors-sub">
+            Familiar anchors that comfort them. Tap any card to attach into conversation.
+          </p>
+        </div>
+
+        <div className="anchors-grid">
+          {/* Card 1: Morning Ritual */}
+          <div
+            className="anchor-card"
+            onClick={() => handleSend("Tell me about listening to morning ragas and having warm breakfast together.")}
+            role="button"
+            tabIndex={0}
+          >
+            <div className="anchor-card-top">
+              <img src="/amma_hero.png" alt="Morning" className="anchor-img-thumb" />
+            </div>
+            <div className="anchor-pill-tag">Sunday mornings</div>
+            <p className="anchor-snippet">Listening to morning ragas with steamed idlis.</p>
+            <div className="anchor-footer">
+              <span className="anchor-category">Anchor</span>
+              <span className="anchor-arrow">↑</span>
+            </div>
+          </div>
+
+          {/* Card 2: Sensory Garden */}
+          <div
+            className="anchor-card"
+            onClick={() => handleSend("Tell me about the white night-blooming jasmine flowers in the old garden.")}
+            role="button"
+            tabIndex={0}
+          >
+            <div className="anchor-card-top icon-top">
+              <span className="anchor-icon-symbol">🌸</span>
+              <div className="anchor-symbol-title">Mylapore Garden</div>
+              <div className="anchor-symbol-sub">Est. 1974</div>
+            </div>
+            <div className="anchor-pill-tag">Your old garden</div>
+            <p className="anchor-snippet">White night-blooming jasmine (Malligai)...</p>
+            <div className="anchor-footer">
+              <span className="anchor-category">Sensory</span>
+              <span className="anchor-arrow">↑</span>
+            </div>
+          </div>
+
+          {/* Card 3: Brass Davarah */}
+          <div
+            className="anchor-card"
+            onClick={() => handleSend("I would love to remember the sound of brass tumblers and morning filter coffee.")}
+            role="button"
+            tabIndex={0}
+          >
+            <div className="anchor-card-top icon-top">
+              <span className="anchor-icon-symbol">☕</span>
+              <div className="anchor-symbol-title">Brass Davarah</div>
+              <div className="anchor-symbol-sub">Morning Ritual</div>
+            </div>
+            <div className="anchor-pill-tag">Filter coffee at 7 AM</div>
+            <p className="anchor-snippet">Rhythmic clinking of brass tumblers.</p>
+            <div className="anchor-footer">
+              <span className="anchor-category">Daily cadence</span>
+              <span className="anchor-arrow">↑</span>
+            </div>
+          </div>
+
+          {/* Card 4: Beloved Song */}
+          <div
+            className="anchor-card"
+            onClick={() => handleSend("Can we think about that soothing devotional melody that brings warmth and peace?")}
+            role="button"
+            tabIndex={0}
+          >
+            <div className="anchor-card-top icon-top">
+              <span className="anchor-icon-symbol">🎶</span>
+              <div className="anchor-symbol-title">குறை ஒன்றும் இல்லை</div>
+              <div className="anchor-symbol-sub">Ragam Sivaranjani</div>
+            </div>
+            <div className="anchor-pill-tag">Beloved song</div>
+            <p className="anchor-snippet">Devotional melody bringing warmth and security.</p>
+            <div className="anchor-footer">
+              <span className="anchor-category">Auditory</span>
+              <span className="anchor-arrow">↑</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Archival Trail: Live Conversation Stream */}
+      <section className="archival-trail-section">
+        <div className="archival-header">
+          <div>
+            <span className="archival-eyebrow">ARCHIVAL TRAIL</span>
+            <h2 className="archival-title">Conversation with Kural</h2>
+          </div>
+          <div className="archival-status-chips">
+            <span className={`sync-pill ${isMockMode ? 'mode-mock' : 'mode-live'}`}>
+              {isMockMode ? 'Offline Prototype' : 'Synced with Claude'}
+            </span>
+          </div>
+        </div>
+
         {backendStatus === 'retrying' && (
           <div className="banner banner-warning">
-            The companion service is waking up — this may take a moment on first visit. Your message will send once it is ready.
-          </div>
-        )}
-        {backendStatus === false && (
-          <div className="banner banner-warning">
-            Companion service is currently unreachable. Responses will use the offline prototype mode until the service reconnects.
+            Backend warming up — messages will send momentarily.
           </div>
         )}
 
@@ -267,54 +388,37 @@ export default function CompanionChat() {
           </div>
         )}
 
-        <div className="messages-stream" role="log" aria-live="polite">
+        <div className="chat-timeline-stream">
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className={`message-row ${msg.sender === 'user' ? 'message-row-user' : 'message-row-companion'}`}
+              className={`timeline-bubble-wrap ${msg.sender === 'user' ? 'bubble-wrap-user' : 'bubble-wrap-companion'}`}
             >
-              <div className="message-bubble">
-                <div className="message-header">
-                  <span className="message-sender">
-                    {msg.sender === 'user' ? 'You' : 'Kural'}
+              <div className="timeline-bubble">
+                <div className="bubble-header-bar">
+                  <span className="bubble-sender-name">
+                    {msg.sender === 'user' ? 'Meera (You)' : `Kural Companion`}
                     {msg.sender === 'companion' && msg.isMock && (
-                      <span className="tag-mock">mock</span>
+                      <span className="tag-mock-dark">mock</span>
                     )}
                   </span>
-                  <span className="message-time">{formatTime(msg.timestamp)}</span>
+                  <span className="bubble-timestamp">{formatTime(msg.timestamp)}</span>
                 </div>
-                <div className="message-content">{msg.text}</div>
+                <div className="bubble-text-content">{msg.text}</div>
+                {msg.sender === 'companion' && (
+                  <div className="bubble-reaction-note">
+                    Reaction noted: <em>Gentle calm during tea</em>
+                  </div>
+                )}
               </div>
             </div>
           ))}
 
-          {/* Gentle Conversation Starters (displayed when conversation is at the welcome state) */}
-          {messages.length <= 1 && (
-            <div className="conversation-starters-card">
-              <p className="starters-prompt">You can type below or choose a peaceful topic to begin:</p>
-              <div className="starters-grid">
-                {conversationStarters.map((starter) => (
-                  <button
-                    key={starter.label}
-                    type="button"
-                    className="starter-btn"
-                    onClick={() => handleSend(starter.prompt)}
-                    disabled={isLoading}
-                  >
-                    {starter.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           {isLoading && (
-            <div className="message-row message-row-companion">
-              <div className="message-bubble loading-bubble">
+            <div className="timeline-bubble-wrap bubble-wrap-companion">
+              <div className="timeline-bubble loading-bubble-dark">
                 <div className="typing-indicator" aria-label="Kural is thinking">
-                  <span></span>
-                  <span></span>
-                  <span></span>
+                  <span></span><span></span><span></span>
                 </div>
               </div>
             </div>
@@ -322,37 +426,12 @@ export default function CompanionChat() {
 
           <div ref={messagesEndRef} />
         </div>
-      </main>
+      </section>
 
-      {/* Status & Input Dock */}
-      <footer className="chat-dock">
-        <div className="triage-status-bar">
-          <div className="triage-item">
-            <span className="triage-label">Companion Status:</span>
-            <span className={`distress-badge distress-${latestDistress.level || 'none'}`}>
-              {latestDistress.level === 'high'
-                ? 'High Support Needed'
-                : latestDistress.level === 'medium'
-                ? 'Gentle Care'
-                : latestDistress.level === 'low'
-                ? 'Attentive'
-                : 'Calm & Listening'}
-            </span>
-          </div>
-
-          {latestDistress.reason && latestDistress.level !== 'none' && (
-            <div className="triage-explanation" title={latestDistress.reason}>
-              {latestDistress.reason}
-            </div>
-          )}
-
-          <div className="session-tag" title="Active session identifier">
-            Session: <code>{sessionId}</code>
-          </div>
-        </div>
-
+      {/* Floating Input Dock */}
+      <footer className="stitch-chat-dock">
         <form
-          className="input-row"
+          className="dock-input-form"
           onSubmit={(e) => {
             e.preventDefault()
             handleSend()
@@ -360,29 +439,23 @@ export default function CompanionChat() {
         >
           <textarea
             ref={textareaRef}
-            className="chat-textarea"
-            placeholder="Type a gentle message to Kural... (Enter to send, Shift+Enter for newline)"
+            className="dock-textarea"
+            placeholder="Type a gentle memory or thought to Kural... (Enter to send)"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
             rows={1}
             disabled={isLoading}
-            aria-label="Message to Kural"
           />
-
           <button
             type="submit"
-            className="btn-send"
+            className="dock-send-btn"
             disabled={!inputText.trim() || isLoading}
-            aria-label="Send message"
+            aria-label="Send"
           >
-            {isLoading ? 'Thinking...' : 'Send'}
+            {isLoading ? '...' : 'Send'}
           </button>
         </form>
-
-        <p className="disclaimer-text">
-          Assistive companion prototype for demonstration. Not a certified clinical diagnostic tool.
-        </p>
       </footer>
     </div>
   )

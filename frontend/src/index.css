@@ -1,48 +1,47 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 :root {
   --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-display: 'Outfit', 'Plus Jakarta Sans', -apple-system, sans-serif;
 
-  /* Kural Design System — Derived from Stitch Exploration */
-  --bg-body: #faf5f0;           /* Warm off-white / cream main background */
-  --bg-surface: #ffffff;        /* Pure card & surface background */
-  --bg-surface-soft: #fff0f4;   /* Pale blush pink secondary surface */
-  --bg-surface-tint: #fcf2f5;   /* Tinted accent surface */
-  --bg-header: rgba(250, 245, 240, 0.92); /* Frosted header background */
-  --bg-input: #ffffff;
+  /* Deep Warm Dark Theme (Matched directly from Stitch Mobile Screens) */
+  --bg-body: #111013;           /* Ultra-rich near-black slate */
+  --bg-surface: #1a181d;        /* Deep rounded card container */
+  --bg-surface-elevated: #242129;/* Elevated card / pill */
+  --bg-surface-soft: #2d2833;   /* Accent border/highlight container */
+  --bg-header: rgba(17, 16, 19, 0.94); /* Frosted dark header */
+  --bg-input: #1f1c24;
 
-  /* Borders & Dividers */
-  --border-subtle: #ede1e6;     /* Subtle warm border */
-  --border-interactive: #e4bfcc;/* Interactive accent border */
-  --border-focus: #c85b7e;      /* Keyboard focus color */
+  /* Borders & Glows */
+  --border-subtle: #2b2732;     /* Subtle divider border */
+  --border-card: #383242;       /* Defined card outline */
+  --border-interactive: #e69ab4;/* Rose accent border */
+  --border-focus: #f2a6bf;      /* Focus glow */
 
-  /* Typography Colors — High Contrast & Dignified */
-  --text-heading: #1e141a;      /* Dark plum / charcoal */
-  --text-body: #4c3b45;         /* Deep readable body text */
-  --text-muted: #7e6b76;        /* Warm secondary mauve text */
-  --text-accent: #c85b7e;       /* Muted rose highlight */
+  /* Typography Colors — High Contrast, Calm & Soft */
+  --text-heading: #ffffff;      /* Pure white heading */
+  --text-body: #e4dde3;         /* Crisp readable body text */
+  --text-muted: #9f94a3;        /* Soft lilac-tinted muted gray */
+  --text-accent: #f2a6bf;       /* Warm rose accent text */
 
-  /* Chat Message Bubbles */
-  --bubble-companion-bg: #fff0f4;
-  --bubble-companion-text: #2d1e26;
-  --bubble-user-bg: #c85b7e;
+  /* Stitch Signature Rose/Pink Accent Tokens */
+  --kural-pink: #f2a6bf;        /* Warm luminous blush rose */
+  --kural-pink-dark: #d97897;   /* Deep saturated rose for buttons */
+  --kural-pink-soft: #3d2a35;   /* Dark rose surface background */
+  --kural-pink-light: #fbebf1;  /* Soft light pink card background */
+  --pill-bg: #292430;
+  --pill-text: #f2a6bf;
 
-  /* Pills & Badges */
-  --pill-bg: #fff0f4;
-  --pill-text: #a44365;
-  --btn-hover-bg: #fbe3ec;
-
-  /* Accent & Action Palette */
-  --kural-pink: #c85b7e;        /* Muted rose for primary actions */
-  --kural-pink-dark: #ad4669;   /* Hover state for primary rose */
-  --kural-pink-soft: #fad2e1;   /* Soft pastel pink */
-  --kural-pink-highlight: #f4b8cd; /* Luminous rose accent */
-  --kural-cream: #faf5f0;       /* Off-white cream */
+  /* Message Bubbles */
+  --bubble-companion-bg: #fbebf1;
+  --bubble-companion-text: #1e1319;
+  --bubble-user-bg: #d97897;
+  --bubble-user-text: #ffffff;
 
   font-family: var(--font-family);
   line-height: 1.6;
   font-weight: 400;
-  color-scheme: light;
+  color-scheme: dark;
   color: var(--text-body);
   background-color: var(--bg-body);
   font-synthesis: none;
