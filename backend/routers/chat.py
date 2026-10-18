@@ -100,7 +100,17 @@ async def chat_with_patient(patient_id: str, request: ChatRequest):
             messages=messages
         )
         
-        bot_reply = response.content[0].text
+        # Extract text content block (some models return ThinkingBlock before TextBlock)
+        bot_reply = ""
+        for block in response.content:
+            if hasattr(block, "text"):
+                bot_reply += block.text
+            elif getattr(block, "type", None) == "text":
+                bot_reply += getattr(block, "text", "")
+
+        if not bot_reply:
+            bot_reply = "I am right here with you, Nell."
+
         session_store.append_turn(request.session_id, "assistant", bot_reply, distress=distress_result)
         
         return ChatResponse(response=bot_reply, distress=distress_result)
