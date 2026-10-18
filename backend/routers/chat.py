@@ -29,6 +29,23 @@ api_key = (os.getenv("ANTHROPIC_API_KEY") or "").strip().strip('"').strip("'") o
 # Non-blocking async Anthropic client if API key is provided; tests can monkeypatch client to None
 client = anthropic.AsyncAnthropic(api_key=api_key) if api_key else None
 
+def get_active_client():
+    global client, ANTHROPIC_MODEL
+    # In pytest test environment, preserve mock mode isolation
+    if "pytest" in sys.modules or os.getenv("PYTEST_CURRENT_TEST"):
+        return client
+    if client is not None:
+        return client
+    # In live development / production: check if .env has been populated
+    load_dotenv(backend_dir / ".env", override=True)
+    load_dotenv(backend_dir.parent / ".env", override=True)
+    live_key = (os.getenv("ANTHROPIC_API_KEY") or "").strip().strip('"').strip("'") or None
+    if live_key:
+        ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022").strip().strip('"').strip("'")
+        client = anthropic.AsyncAnthropic(api_key=live_key)
+        return client
+    return None
+
 class ChatRequest(BaseModel):
     session_id: str
     message: str
@@ -81,7 +98,8 @@ async def chat_with_patient(patient_id: str, request: ChatRequest):
     current_history[-1]["distress"] = distress_result
 
     # 3. If no live Anthropic client, return clearly labeled mock companion response
-    if not client:
+    active_client = get_active_client()
+    if not active_client:
         bot_reply = generate_mock_response(preferred_name, distress_result.get("level", "none"))
         session_store.append_turn(request.session_id, "assistant", bot_reply, distress=distress_result)
         audio_payload = await voice_service.synthesize_speech(patient_id, bot_reply)
@@ -97,7 +115,7 @@ async def chat_with_patient(patient_id: str, request: ChatRequest):
     messages = [{"role": turn["role"], "content": turn["content"]} for turn in history_for_claude]
         
     try:
-        response = await client.messages.create(
+        response = await active_client.messages.create(
             model=ANTHROPIC_MODEL,
             max_tokens=1024,
             system=system_prompt,

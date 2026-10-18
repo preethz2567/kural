@@ -11,7 +11,7 @@ DISTRESS_KEYWORDS = {
         "i don't understand", "i don't like it here"
     ],
     "low": [
-        "tired", "sad", "miss him", "miss her"
+        "tired", "sad", "miss him", "miss her", "feeling down", "feeling low", "bad", "not good", "lonely", "upset"
     ]
 }
 
