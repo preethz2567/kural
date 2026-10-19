@@ -63,7 +63,7 @@ export default function LandingPage() {
           <span className="tamil-logo">குரல்</span>
           <span className="kural-tag">KURAL</span>
           <span className="header-dot">•</span>
-          <span className="header-portal-label">VOICE COMPANION</span>
+          <span className="header-portal-label">ALZHEIMER’S &amp; DEMENTIA CARE</span>
         </div>
       </header>
 
@@ -90,13 +90,17 @@ export default function LandingPage() {
           <span className="status-dot-green"></span>
         </div>
 
+        <div className="landing-dementia-pill">
+          🧠 Alzheimer’s &amp; Dementia Memory Companion
+        </div>
+
         <h1 className="landing-display-headline">
-          Stay close,
-          <span className="title-gradient"> even from afar.</span>
+          Reassuring voice,
+          <span className="title-gradient"> when memory fades.</span>
         </h1>
 
         <p className="landing-body-lead">
-          Small messages become familiar, reassuring moments in their day. Preserving cherished memories, maternal cadence, and who they are.
+          An AI memory care companion calming Alzheimer’s confusion, memory loops, and sundowning anxiety using family voice therapy and cherished cultural anchors.
         </p>
 
         {/* Audio Sample Preview Button */}
@@ -116,12 +120,12 @@ export default function LandingPage() {
         {/* Caregiver Portal & Setup Card */}
         <article className="landing-stitch-card caregiver-feature-card">
           <div className="card-top-tag">
-            <span>🌱 FOR FAMILIES &amp; CAREGIVERS</span>
+            <span>🧠 DEMENTIA CAREGIVER COMMAND</span>
           </div>
 
-          <h2 className="card-headline">Caregiver Portal &amp; Setup</h2>
+          <h2 className="card-headline">Dementia Telemetry &amp; Caregiver Sync</h2>
           <p className="card-description">
-            Anchor treasured family stories, adapt stage-aware pacing, and stay gently connected with complete peace of mind.
+            Track circadian sundowning, anchor treasured memories, and monitor real-time tranquility scores with doctor-ready clinical logs.
           </p>
 
           <div className="card-actions-row">
@@ -137,12 +141,12 @@ export default function LandingPage() {
         {/* Older Adult Direct Chat Card */}
         <article className="landing-stitch-card companion-feature-card">
           <div className="card-top-tag">
-            <span>🌸 FOR OLDER ADULTS</span>
+            <span>🌸 ALZHEIMER’S MEMORY COMPANION</span>
           </div>
 
-          <h2 className="card-headline">Personalized Companion Chat</h2>
+          <h2 className="card-headline">Voice Reassurance for {preferredName}</h2>
           <p className="card-description">
-            Unhurried conversation grounded in {preferredName}&apos;s favorite memories, comfortable cadence, and infinite patience.
+            Unhurried conversation using validation therapy in {caregiverName}&apos;s cloned voice — calming distress, memory loss confusion, and repetitive loops.
           </p>
 
           <div className="card-actions-row">

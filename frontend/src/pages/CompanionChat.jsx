@@ -407,8 +407,8 @@ export default function CompanionChat() {
 
   const preferredName = patientData?.preferred_name || patientData?.name || 'Friend'
   const stageDisplay = patientData?.stage && patientData.stage !== 'unknown'
-    ? `${patientData.stage.charAt(0).toUpperCase() + patientData.stage.slice(1)} Stage`
-    : 'Stage Adaptive'
+    ? `${patientData.stage.charAt(0).toUpperCase() + patientData.stage.slice(1)} Stage Dementia`
+    : 'Dementia Care'
 
   // Dynamic caregiver link name based on actual relationships in the profile
   const caregiverRelation = patientData?.relationships?.[0]
@@ -668,7 +668,7 @@ export default function CompanionChat() {
             <span className="brand-kural">KURAL</span>
           </div>
           <span className="header-divider-v">|</span>
-          <span className="chat-header-sub">{langMode === 'ta' ? 'குரல் துணை' : 'Companion Session'}</span>
+          <span className="chat-header-sub">{langMode === 'ta' ? 'நினைவுப் பராமரிப்பு' : 'Dementia Memory Care'}</span>
         </div>
 
         <div className="chat-header-person">
@@ -1110,9 +1110,9 @@ export default function CompanionChat() {
 
           {/* Main Section Banner */}
           <section className="companion-hero-callout">
-            <h1 className="companion-hero-title">Stay close, even from afar.</h1>
+            <h1 className="companion-hero-title">Voice Reassurance for Alzheimer&apos;s &amp; Dementia</h1>
             <p className="companion-hero-sub">
-              Small messages can become familiar, reassuring moments in their day.
+              Calming memory loss, sundowning anxiety, and disorientation with familiar family voice anchors.
             </p>
 
             {/* Dynamic Portrait Hero Card */}

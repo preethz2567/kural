@@ -63,18 +63,18 @@ export default function ProfileList() {
           <span className="tamil-logo">குரல்</span>
           <span className="kural-tag">KURAL</span>
           <span className="header-dot">•</span>
-          <span className="header-portal-label">PERSON DIRECTORY</span>
+          <span className="header-portal-label">DEMENTIA CARE DIRECTORY</span>
         </div>
       </header>
 
       <div className="profiles-page-head">
-        <span className="anchors-eyebrow">FAMILY &amp; ELDER DIRECTORY</span>
+        <span className="anchors-eyebrow">MEMORY CARE DIRECTORY</span>
         <h1 className="portal-display-title">
-          Choose a loved one&apos;s
-          <span className="title-gradient"> companion session</span>
+          Alzheimer’s &amp; Dementia
+          <span className="title-gradient"> Memory Care Profiles</span>
         </h1>
         <p className="portal-lead">
-          Each person has their own cherished memories, familiar cadence, and stage-adaptive pacing.
+          Select an elder profile to start their voice session. Tailored with validation therapy, circadian sundowning tracking, and familiar memories.
         </p>
 
         {/* Search & Filter Bar */}

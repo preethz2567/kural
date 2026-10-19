@@ -603,7 +603,7 @@ Generated with love by Kural Dementia Companion Care.
           <span className="tamil-logo">குரல்</span>
           <span className="kural-tag">KURAL</span>
           <span className="header-dot">•</span>
-          <span className="header-portal-label">CAREGIVER WORKSPACE</span>
+          <span className="header-portal-label">DEMENTIA CAREGIVER COMMAND</span>
         </div>
       </header>
 
@@ -622,11 +622,11 @@ Generated with love by Kural Dementia Companion Care.
       {/* Display Heading */}
       <section className="portal-heading-section">
         <h1 className="portal-display-title">
-          {preferredName}&apos;s Caregiver
-          <span className="title-gradient"> Workspace</span>
+          {preferredName}&apos;s Dementia
+          <span className="title-gradient"> Care Command</span>
         </h1>
         <p className="portal-lead">
-          Linked with {caregiverName}. Monitor tranquility, emotional anchors, and recent reactions.
+          Linked with {caregiverName}. Real-time dementia tranquility monitoring, sundowning alerts, and neurologist reports.
         </p>
       </section>
 
