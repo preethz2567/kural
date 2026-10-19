@@ -70,7 +70,10 @@ function loadSavedMessages(patientId, currentLang = 'en') {
     if (raw) {
       const parsed = JSON.parse(raw)
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed
+        return parsed.map((m) => ({
+          ...m,
+          isSynthesizingVoice: false,
+        }))
       }
     }
   } catch (err) {
@@ -413,12 +416,25 @@ export default function CompanionChat() {
           const replyHasTamil = /[\u0B80-\u0BFF]/.test(cleanReply)
           const voiceLang = replyHasTamil || langMode === 'ta' ? 'ta' : 'en'
 
+          // Safety timeout: ensure preparing badge clears after 10s even if network is slow
+          const safetyTimer = setTimeout(() => {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === companionMsgId && m.isSynthesizingVoice
+                  ? { ...m, isSynthesizingVoice: false }
+                  : m
+              )
+            )
+            speakReply(cleanReply, companionMsgId)
+          }, 10000)
+
           synthesizeVoiceSpeech({
             patient_id: activePatientId,
             text: cleanReply,
             language: voiceLang,
           })
             .then((audioData) => {
+              clearTimeout(safetyTimer)
               setMessages((prev) => {
                 const updated = prev.map((m) =>
                   m.id === companionMsgId
@@ -432,6 +448,7 @@ export default function CompanionChat() {
               playAudioResponse(audioData, cleanReply, companionMsgId)
             })
             .catch((err) => {
+              clearTimeout(safetyTimer)
               console.warn('[CompanionChat] Background voice synthesis failed, falling back:', err)
               setMessages((prev) =>
                 prev.map((m) =>
