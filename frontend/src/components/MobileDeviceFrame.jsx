@@ -47,38 +47,34 @@ export default function MobileDeviceFrame({ children }) {
         <aside className="web-showcase-sidebar sidebar-left" aria-hidden="true">
           <div className="showcase-card">
             <div className="showcase-card-header">
-              <span className="showcase-tag-pill">✦ WHAT IS KURAL? • HACKATHON INNOVATION</span>
+              <span className="showcase-tag-pill">✦ KURAL VOICE AI</span>
             </div>
-            <h2 className="showcase-title">Zero-Agitation AI Voice Anchor</h2>
+            <h2 className="showcase-title">Empathetic Voice Companion</h2>
             <p className="showcase-desc">
-              <strong>Not just a chatbot.</strong> Kural solves late-day dementia panic (sundowning) by synthesizing the real voices of family members, detecting agitation in real time, and soothing elders with culturally familiar memories.
+              Clinical soothing cadences, familiar emotional anchors, and multilingual reassurance designed for Alzheimer’s &amp; dementia care.
             </p>
             <div className="showcase-feature-list">
               <div className="showcase-feature-item">
                 <span className="feature-icon">🎙️</span>
                 <div>
-                  <strong>Cloned Family Voice (LinuxONE XTTS-v2)</strong>
-                  <span>Elders hear their daughter or son&apos;s actual voice instead of an artificial bot, triggering deep neurological comfort.</span>
+                  <strong>Hands-Free Speech</strong>
+                  <span>Continuous Web Speech STT &amp; vocal reassurance</span>
                 </div>
               </div>
               <div className="showcase-feature-item">
-                <span className="feature-icon">🧠</span>
+                <span className="feature-icon">📍</span>
                 <div>
-                  <strong>Agitation ML &amp; De-escalation (GoEmotions)</strong>
-                  <span>Classifies distress and confusion live, pivoting instantly to soothing validation therapy before panic peaks.</span>
+                  <strong>Safe Zone Geofence</strong>
+                  <span>Continuous boundary safety &amp; caregiver check-in</span>
                 </div>
               </div>
               <div className="showcase-feature-item">
-                <span className="feature-icon">🌸</span>
+                <span className="feature-icon">🌐</span>
                 <div>
-                  <strong>Bilingual Cultural Anchors (Tamil &amp; English)</strong>
-                  <span>Re-grounds memory via familiar sensory cues: MS Subbulakshmi devotional hymns, morning filter coffee, and garden walks.</span>
+                  <strong>Bilingual Cadence</strong>
+                  <span>Native Tamil &amp; English cultural voice modes</span>
                 </div>
               </div>
-            </div>
-            <div className="showcase-jury-hint">
-              <span className="jury-hint-badge">💡 Jury Test</span>
-              <span>Tap <strong>Play Greeting</strong> inside the phone to hear daughter Meera&apos;s synthesized voice!</span>
             </div>
           </div>
         </aside>
@@ -163,38 +159,34 @@ export default function MobileDeviceFrame({ children }) {
         <aside className="web-showcase-sidebar sidebar-right" aria-hidden="true">
           <div className="showcase-card">
             <div className="showcase-card-header">
-              <span className="showcase-tag-pill tag-purple">♥ CLINICAL &amp; CAREGIVER COMMAND</span>
+              <span className="showcase-tag-pill tag-purple">♥ CAREGIVER WORKSPACE</span>
             </div>
-            <h2 className="showcase-title">Caregiver Remote Peace &amp; Telemetry</h2>
+            <h2 className="showcase-title">Clinical Serenity &amp; Sync</h2>
             <p className="showcase-desc">
-              <strong>Closing the distance.</strong> While the elder has a comforting conversation, long-distance family and physicians receive continuous behavioral intelligence and peace-of-mind metrics.
+              Continuous emotional monitoring backed by GoEmotions ML classification and doctor-ready clinical reports.
             </p>
             <div className="showcase-feature-list">
               <div className="showcase-feature-item">
                 <span className="feature-icon">🌿</span>
                 <div>
                   <strong>Daily Tranquility Index</strong>
-                  <span>Continuous serenity scoring with automatic tracking of late-afternoon sundowning triggers.</span>
+                  <span>Baseline peace scoring with sundowning tracking</span>
                 </div>
               </div>
               <div className="showcase-feature-item">
-                <span className="feature-icon">🛡️</span>
+                <span className="feature-icon">📝</span>
                 <div>
-                  <strong>Safe Haven Geofence Verification</strong>
-                  <span>Immediate perimeter reassurance to ease wandering anxiety without triggering disorientation or panic.</span>
+                  <strong>Observation Reaction Logs</strong>
+                  <span>Real-time caregiver notes &amp; mood reaction capture</span>
                 </div>
               </div>
               <div className="showcase-feature-item">
                 <span className="feature-icon">📋</span>
                 <div>
-                  <strong>Doctor-Ready Clinical Export</strong>
-                  <span>One-click clipboard export of emotional reactions, keyword triggers, and mood trends for geriatricians.</span>
+                  <strong>Doctor Clinical Export</strong>
+                  <span>One-click clipboard export for geriatricians &amp; family</span>
                 </div>
               </div>
-            </div>
-            <div className="showcase-jury-hint">
-              <span className="jury-hint-badge">💡 Jury Test</span>
-              <span>Open the <strong>Profiles</strong> tab to switch between Kalyani Amma (Tamil) and Eleanor &quot;Nell&quot; Vance (English)!</span>
             </div>
           </div>
         </aside>

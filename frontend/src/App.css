@@ -129,32 +129,6 @@
   display: block;
 }
 
-.showcase-jury-hint {
-  margin-top: 8px;
-  padding: 10px 12px;
-  background: #fdf5f8;
-  border: 1px dashed rgba(184, 78, 115, 0.4);
-  border-radius: 12px;
-  font-size: 11px;
-  color: #4a3340;
-  line-height: 1.45;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.jury-hint-badge {
-  background: #b84e73;
-  color: #ffffff;
-  font-size: 9.5px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 2px 7px;
-  border-radius: 6px;
-  flex-shrink: 0;
-}
-
 /* Center Column */
 .web-device-center-column {
   display: flex;
