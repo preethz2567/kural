@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { checkBackendHealth, fetchPatient, sendChatMessage, listPatients } from '../api.js'
 import { CADENCE_PRESETS } from '../cadencePresets.js'
 import { playClonedAudio, unlockAudio } from '../audioUtils.js'
+import KuralLogo from '../components/KuralLogo.jsx'
 import '../App.css'
 
 function createSessionId(prefix = 'sess') {
@@ -760,6 +761,7 @@ export default function CompanionChat() {
             ←
           </Link>
           <div className="chat-brand-tag">
+            <KuralLogo size={18} />
             <span className="brand-tamil">குரல்</span>
             <span className="brand-kural">KURAL</span>
           </div>
