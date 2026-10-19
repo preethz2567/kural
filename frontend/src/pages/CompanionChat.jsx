@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { checkBackendHealth, fetchPatient, sendChatMessage } from '../api.js'
+import { checkBackendHealth, fetchPatient, sendChatMessage, listPatients } from '../api.js'
 import { CADENCE_PRESETS } from '../cadencePresets.js'
 import { base64ToAudioUrl, playClonedAudio, unlockAudio } from '../audioUtils.js'
 import '../App.css'
@@ -92,11 +92,15 @@ export default function CompanionChat() {
   })
   const [isClonedAudio, setIsClonedAudio] = useState(false)
   const [currentSpeaker, setCurrentSpeaker] = useState('Caregiver')
+  const [showPatientDropdown, setShowPatientDropdown] = useState(false)
+  const [allPatients, setAllPatients] = useState([])
+  const [speakingMessageId, setSpeakingMessageId] = useState(null)
 
   const messagesEndRef = useRef(null)
   const textareaRef = useRef(null)
   const familyAudioRef = useRef(null)
   const clonedAudioRef = useRef(null)
+  const dropdownRef = useRef(null)
 
   useEffect(() => {
     return () => {
@@ -113,6 +117,52 @@ export default function CompanionChat() {
       }
     }
   }, [])
+
+  // Load available elder profiles for 1-tap switcher
+  useEffect(() => {
+    listPatients()
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setAllPatients(data)
+        }
+      })
+      .catch(() => {
+        setAllPatients([
+          { patient_id: 'patient_kalyani', name: 'Kalyani', preferred_name: 'Amma', language: 'Tamil', stage: 'moderate' },
+          { patient_id: 'patient_001', name: 'Eleanor Vance', preferred_name: 'Nell', language: 'English', stage: 'mild' },
+        ])
+      })
+  }, [])
+
+  // Close patient dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target) && !e.target.closest('.person-header-pill')) {
+        setShowPatientDropdown(false)
+      }
+    }
+    if (showPatientDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showPatientDropdown])
+
+  const handleSwitchPatient = (newId, defaultLang) => {
+    if (newId === activePatientId) {
+      setShowPatientDropdown(false)
+      return
+    }
+    stopSpeaking()
+    setActivePatientId(newId)
+    localStorage.setItem('kural_active_patient_id', newId)
+    setSessionId(createSessionId(newId))
+    const nextLang = defaultLang || (newId === 'patient_kalyani' ? 'ta' : 'en')
+    setLangMode(nextLang)
+    localStorage.setItem('kural_lang_mode', nextLang)
+    setShowPatientDropdown(false)
+  }
 
   const toggleLanguage = () => {
     const next = langMode === 'en' ? 'ta' : 'en'
@@ -224,7 +274,7 @@ export default function CompanionChat() {
 
       // Automatic Voice Cloning Playback: immediately speaks in caregiver's voice
       if (autoVoiceEnabled) {
-        playAudioResponse(data.audio, replyText)
+        playAudioResponse(data.audio, replyText, companionMessage.id)
       }
     } catch (err) {
       setError(err.message || 'Unable to connect to companion service.')
@@ -386,6 +436,7 @@ export default function CompanionChat() {
     }
     setIsSpeaking(false)
     setIsClonedAudio(false)
+    setSpeakingMessageId(null)
   }
 
   const toggleAutoVoice = () => {
@@ -397,9 +448,10 @@ export default function CompanionChat() {
     }
   }
 
-  const speakReply = (textToSpeak) => {
+  const speakReply = (textToSpeak, msgId = null) => {
     if (!('speechSynthesis' in window)) return
     stopSpeaking()
+    if (msgId) setSpeakingMessageId(msgId)
     const cleanText = textToSpeak.replace(/\[.*?\]/g, '').trim()
     const utterance = new SpeechSynthesisUtterance(cleanText)
 
@@ -427,19 +479,22 @@ export default function CompanionChat() {
     utterance.onstart = () => {
       setIsSpeaking(true)
       setIsClonedAudio(false)
+      if (msgId) setSpeakingMessageId(msgId)
     }
     utterance.onend = () => {
       setIsSpeaking(false)
       setIsClonedAudio(false)
+      setSpeakingMessageId(null)
     }
     utterance.onerror = () => {
       setIsSpeaking(false)
       setIsClonedAudio(false)
+      setSpeakingMessageId(null)
     }
     speechSynthesis.speak(utterance)
   }
 
-  const playAudioResponse = (audioData, textFallback) => {
+  const playAudioResponse = (audioData, textFallback, msgId = null) => {
     stopSpeaking()
 
     if (audioData?.audio_base64) {
@@ -447,23 +502,27 @@ export default function CompanionChat() {
       setCurrentSpeaker(speaker)
       setIsSpeaking(true)
       setIsClonedAudio(true)
+      if (msgId) setSpeakingMessageId(msgId)
 
       const controller = playClonedAudio(audioData, {
         onStart: () => {
           setIsSpeaking(true)
           setIsClonedAudio(true)
+          if (msgId) setSpeakingMessageId(msgId)
         },
         onEnded: () => {
           setIsSpeaking(false)
           setIsClonedAudio(false)
+          setSpeakingMessageId(null)
           clonedAudioRef.current = null
         },
         onError: (err) => {
           console.warn('[Auto-Voice] Cloned neural playback error, falling back to local speech:', err)
           setIsSpeaking(false)
           setIsClonedAudio(false)
+          setSpeakingMessageId(null)
           clonedAudioRef.current = null
-          if (textFallback) speakReply(textFallback)
+          if (textFallback) speakReply(textFallback, msgId)
         },
       })
       clonedAudioRef.current = controller
@@ -472,7 +531,7 @@ export default function CompanionChat() {
 
     // Fallback if no audio payload or synthesis failed
     if (textFallback) {
-      speakReply(textFallback)
+      speakReply(textFallback, msgId)
     }
   }
 
@@ -552,27 +611,94 @@ export default function CompanionChat() {
             {langMode === 'ta' ? '🇮🇳 தமிழ்' : '🇬🇧 EN'}
           </button>
 
-          <div className="person-header-info">
-            <span className="person-header-name">{preferredName}</span>
-            <span className="person-header-status">
-              <span className="status-dot-green"></span> {langMode === 'ta' ? 'இணைப்பு' : 'Active'}
-            </span>
-          </div>
-          <button
-            type="button"
-            className="header-avatar-btn"
-            onClick={() => navigate('/profiles')}
-            title="Switch profile"
+          {/* Quick Patient Switcher Pill with Chevron */}
+          <div
+            className={`person-header-pill ${showPatientDropdown ? 'pill-open' : ''}`}
+            onClick={() => setShowPatientDropdown((prev) => !prev)}
+            role="button"
+            tabIndex={0}
+            title="Switch between Kalyani Amma and Nell"
           >
-            {activePatientId === 'patient_kalyani' ? (
-              <img src="/avatar_amma.jpg" alt={preferredName} className="header-avatar-img" />
-            ) : (
-              <div className="header-avatar-initial">
-                {preferredName.charAt(0).toUpperCase()}
-              </div>
-            )}
-          </button>
+            <div className="person-header-info">
+              <span className="person-header-name">
+                {preferredName} <span className="chevron-pill">{showPatientDropdown ? '▴' : '▾'}</span>
+              </span>
+              <span className="person-header-status">
+                <span className="status-dot-green"></span> {langMode === 'ta' ? 'இணைப்பு' : 'Active'}
+              </span>
+            </div>
+            <div className={`header-avatar-btn ${isSpeaking ? 'avatar-speaking-aura' : ''}`}>
+              {activePatientId === 'patient_kalyani' ? (
+                <img src="/avatar_amma.jpg" alt={preferredName} className="header-avatar-img" />
+              ) : (
+                <div className="header-avatar-initial">
+                  {preferredName.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
+
+        {/* Floating Patient Switcher Dropdown */}
+        {showPatientDropdown && (
+          <div className="patient-quick-dropdown" ref={dropdownRef}>
+            <div className="dropdown-header-bar">
+              <span className="dropdown-header-title">Switch Active Elder Profile</span>
+              <span className="dropdown-current-tag">1-Tap Switch</span>
+            </div>
+            <div className="dropdown-patient-list">
+              {allPatients.map((p) => {
+                const isCurrent = p.patient_id === activePatientId
+                const isTamil = p.patient_id === 'patient_kalyani' || (p.language && p.language.toLowerCase().includes('tamil'))
+                return (
+                  <button
+                    key={p.patient_id}
+                    type="button"
+                    className={`dropdown-patient-card ${isCurrent ? 'current-patient' : ''}`}
+                    onClick={() => handleSwitchPatient(p.patient_id, isTamil ? 'ta' : 'en')}
+                  >
+                    <div className="dropdown-avatar-wrap">
+                      {p.patient_id === 'patient_kalyani' ? (
+                        <img src="/avatar_amma.jpg" alt={p.preferred_name || p.name} className="dropdown-avatar-img" />
+                      ) : (
+                        <div className="dropdown-avatar-initial">
+                          {(p.preferred_name || p.name || 'N').charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      {isCurrent && <span className="dropdown-active-dot" />}
+                    </div>
+                    <div className="dropdown-patient-meta">
+                      <span className="dropdown-patient-name">
+                        {p.preferred_name || p.name}
+                        {isCurrent && <span className="badge-active-tag">Active</span>}
+                      </span>
+                      <span className="dropdown-patient-sub">
+                        {isTamil ? '🇮🇳 Tamil Voice • Meera' : '🇬🇧 English Voice • Clara'}
+                      </span>
+                    </div>
+                    <span className="dropdown-arrow">{isCurrent ? '✓' : '→'}</span>
+                  </button>
+                )
+              })}
+            </div>
+            <div className="dropdown-footer">
+              <Link
+                to="/onboarding"
+                className="dropdown-add-link"
+                onClick={() => setShowPatientDropdown(false)}
+              >
+                + Setup New Elder Profile
+              </Link>
+              <Link
+                to="/profiles"
+                className="dropdown-all-link"
+                onClick={() => setShowPatientDropdown(false)}
+              >
+                Full Directory →
+              </Link>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Safe Zone & Intergenerational Link Banner */}
@@ -809,12 +935,22 @@ export default function CompanionChat() {
               key={msg.id}
               className={`timeline-bubble-wrap ${msg.sender === 'user' ? 'bubble-wrap-user' : 'bubble-wrap-companion'}`}
             >
-              <div className="timeline-bubble">
+              <div className={`timeline-bubble ${speakingMessageId === msg.id ? 'bubble-currently-speaking' : ''}`}>
                 <div className="bubble-header-bar">
                   <span className="bubble-sender-name">
                     {msg.sender === 'user' ? `${caregiverName} (You)` : `Kural Companion`}
                     {msg.sender === 'companion' && msg.isMock && (
                       <span className="tag-mock-dark">mock</span>
+                    )}
+                    {speakingMessageId === msg.id && (
+                      <span className="bubble-speaking-badge">
+                        <span className="mini-bars">
+                          <span className="m-bar mb-1"></span>
+                          <span className="m-bar mb-2"></span>
+                          <span className="m-bar mb-3"></span>
+                        </span>
+                        Speaking
+                      </span>
                     )}
                   </span>
                   <span className="bubble-timestamp">{formatTime(msg.timestamp)}</span>
@@ -824,17 +960,19 @@ export default function CompanionChat() {
                   <div className="bubble-bottom-row">
                     <button
                       type="button"
-                      className="btn-speak-bubble"
+                      className={`btn-speak-bubble ${speakingMessageId === msg.id ? 'bubble-is-playing' : ''}`}
                       onClick={() => {
-                        if (msg.audio?.audio_base64) {
-                          playAudioResponse(msg.audio, msg.text)
+                        if (speakingMessageId === msg.id) {
+                          stopSpeaking()
+                        } else if (msg.audio?.audio_base64) {
+                          playAudioResponse(msg.audio, msg.text, msg.id)
                         } else {
-                          speakReply(msg.text)
+                          speakReply(msg.text, msg.id)
                         }
                       }}
-                      title="Replay this response in voice"
+                      title={speakingMessageId === msg.id ? 'Stop audio' : 'Replay in voice'}
                     >
-                      {isSpeaking ? '🔊 Replay' : '▶ Replay'}
+                      {speakingMessageId === msg.id ? '⏹ Stop' : isSpeaking ? '🔊 Replay' : '▶ Replay'}
                     </button>
                     {msg.audio?.speaker_name && (
                       <span className="cloned-voice-bubble-badge" title="Synthesized with open-source Coqui XTTS-v2 voice model">
@@ -869,23 +1007,29 @@ export default function CompanionChat() {
         </div>
       </section>
 
-      {/* Live Cloned Speech Indicator & Player Banner */}
+      {/* Live Cloned Speech Indicator & Player Banner with 10-Bar Waveform */}
       {isSpeaking && (
         <div className="live-speech-dock-banner">
           <div className="live-speech-content">
-            <div className="speech-wave-anim">
+            <div className="speech-wave-anim" aria-label="Live audio frequency waveform">
               <span className="wave-bar bar-1"></span>
               <span className="wave-bar bar-2"></span>
               <span className="wave-bar bar-3"></span>
               <span className="wave-bar bar-4"></span>
               <span className="wave-bar bar-5"></span>
+              <span className="wave-bar bar-6"></span>
+              <span className="wave-bar bar-7"></span>
+              <span className="wave-bar bar-8"></span>
+              <span className="wave-bar bar-9"></span>
+              <span className="wave-bar bar-10"></span>
             </div>
             <div className="live-speech-meta">
               <span className="live-speech-speaker">
                 {isClonedAudio ? `🎙️ Speaking in ${currentSpeaker}'s Cloned Voice` : '🎙️ Speaking Companion Reply'}
               </span>
               <span className="live-speech-engine">
-                {isClonedAudio ? 'Coqui XTTS-v2 (LinuxONE Architecture) • Auto-Playing' : 'Gentle Maternal Cadence'}
+                <span className="engine-pulse-dot" />
+                {isClonedAudio ? 'Coqui XTTS-v2 Active • LinuxONE Microservice' : 'Gentle Maternal Cadence'}
               </span>
             </div>
           </div>
