@@ -628,13 +628,11 @@ export default function CompanionChat() {
               </span>
             </div>
             <div className={`header-avatar-btn ${isSpeaking ? 'avatar-speaking-aura' : ''}`}>
-              {activePatientId === 'patient_kalyani' ? (
-                <img src="/avatar_amma.jpg" alt={preferredName} className="header-avatar-img" />
-              ) : (
-                <div className="header-avatar-initial">
-                  {preferredName.charAt(0).toUpperCase()}
-                </div>
-              )}
+              <img
+                src={activePatientId === 'patient_kalyani' ? '/avatar_amma.jpg' : '/avatar_nell.jpg'}
+                alt={preferredName}
+                className="header-avatar-img"
+              />
             </div>
           </div>
         </div>
@@ -658,13 +656,11 @@ export default function CompanionChat() {
                     onClick={() => handleSwitchPatient(p.patient_id, isTamil ? 'ta' : 'en')}
                   >
                     <div className="dropdown-avatar-wrap">
-                      {p.patient_id === 'patient_kalyani' ? (
-                        <img src="/avatar_amma.jpg" alt={p.preferred_name || p.name} className="dropdown-avatar-img" />
-                      ) : (
-                        <div className="dropdown-avatar-initial">
-                          {(p.preferred_name || p.name || 'N').charAt(0).toUpperCase()}
-                        </div>
-                      )}
+                      <img
+                        src={p.patient_id === 'patient_kalyani' ? '/avatar_amma.jpg' : '/avatar_nell.jpg'}
+                        alt={p.preferred_name || p.name}
+                        className="dropdown-avatar-img"
+                      />
                       {isCurrent && <span className="dropdown-active-dot" />}
                     </div>
                     <div className="dropdown-patient-meta">
@@ -788,27 +784,18 @@ export default function CompanionChat() {
 
         {/* Dynamic Portrait Hero Card */}
         <div className="hero-portrait-card">
-          {activePatientId === 'patient_kalyani' ? (
-            <img
-              src="/hero_family.jpg"
-              alt="Kalyani Amma and daughter"
-              className="hero-portrait-image"
-            />
-          ) : (
-            <div className="hero-portrait-placeholder">
-              <span className="hero-giant-initial">{preferredName.charAt(0).toUpperCase()}</span>
-              <span className="hero-person-fullname">{patientData?.name || preferredName}</span>
-            </div>
-          )}
+          <img
+            src={activePatientId === 'patient_kalyani' ? '/hero_family.jpg' : '/hero_nell.jpg'}
+            alt={activePatientId === 'patient_kalyani' ? 'Kalyani Amma and family' : 'Nell Vance and daughter'}
+            className="hero-portrait-image"
+          />
           <div className="portrait-overlay-strip">
             <div className="overlay-person-badge">
-              {activePatientId === 'patient_kalyani' ? (
-                <img src="/avatar_amma.jpg" alt={preferredName} className="overlay-mini-avatar-img" />
-              ) : (
-                <div className="overlay-mini-avatar">
-                  {preferredName.charAt(0).toUpperCase()}
-                </div>
-              )}
+              <img
+                src={activePatientId === 'patient_kalyani' ? '/avatar_amma.jpg' : '/avatar_nell.jpg'}
+                alt={preferredName}
+                className="overlay-mini-avatar-img"
+              />
               <div>
                 <div className="overlay-name-row">
                   <span className="overlay-name">{preferredName}</span>

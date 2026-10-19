@@ -68,22 +68,16 @@ export default function LandingPage() {
       <div className="landing-hero-center">
         <div className="landing-portrait-card">
           <img
-            src="/hero_family.jpg"
-            alt="Family holding hands warmly on a sunlit veranda"
+            src={activePatient?.patient_id === 'patient_kalyani' ? '/hero_family.jpg' : '/hero_nell.jpg'}
+            alt="Family holding hands warmly"
             className="landing-family-img"
           />
           <div className="landing-avatar-overlap">
-            {activePatient?.patient_id === 'patient_kalyani' ? (
-              <img
-                src="/avatar_amma.jpg"
-                alt={preferredName}
-                className="landing-mini-avatar"
-              />
-            ) : (
-              <div className="landing-mini-avatar-circle">
-                <span>{preferredName.charAt(0).toUpperCase()}</span>
-              </div>
-            )}
+            <img
+              src={activePatient?.patient_id === 'patient_kalyani' ? '/avatar_amma.jpg' : '/avatar_nell.jpg'}
+              alt={preferredName}
+              className="landing-mini-avatar"
+            />
             <div className="avatar-heart-badge">♥</div>
           </div>
         </div>

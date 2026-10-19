@@ -607,13 +607,11 @@ Generated with love by Kural Dementia Companion Care.
       {/* Dynamic Profile Avatar Hero */}
       <div className="portal-avatar-wrap">
         <div className="portal-avatar-ring">
-          {activePatient?.patient_id === 'patient_kalyani' ? (
-            <img src="/avatar_amma.jpg" alt={preferredName} className="portal-avatar-img" />
-          ) : (
-            <div className="portal-avatar-circle">
-              <span className="portal-avatar-letter">{initialLetter}</span>
-            </div>
-          )}
+          <img
+            src={activePatient?.patient_id === 'patient_kalyani' ? '/avatar_amma.jpg' : '/avatar_nell.jpg'}
+            alt={preferredName}
+            className="portal-avatar-img"
+          />
           <div className="avatar-heart-badge">♥</div>
         </div>
       </div>

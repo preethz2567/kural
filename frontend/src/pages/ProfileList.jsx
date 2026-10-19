@@ -167,13 +167,11 @@ export default function ProfileList() {
               >
                 <div className="profile-card-top-row">
                   <div className="portal-avatar-ring-small">
-                    {p.patient_id === 'patient_kalyani' ? (
-                      <img src="/avatar_amma.jpg" alt={preferred} className="portal-avatar-img" />
-                    ) : (
-                      <div className="portal-avatar-circle-small">
-                        <span className="avatar-initial-small">{preferred.charAt(0).toUpperCase()}</span>
-                      </div>
-                    )}
+                    <img
+                      src={p.patient_id === 'patient_kalyani' ? '/avatar_amma.jpg' : '/avatar_nell.jpg'}
+                      alt={preferred}
+                      className="portal-avatar-img"
+                    />
                   </div>
 
                   <div className="profile-meta-block">
