@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useLocation, Link } from 'react-router-dom'
+import MobileNavBar from './MobileNavBar'
 
 /**
  * MobileDeviceFrame
@@ -142,6 +143,9 @@ export default function MobileDeviceFrame({ children }) {
               <div className="phone-app-content">
                 {children}
               </div>
+
+              {/* Persistent Mobile Bottom Navigation Bar */}
+              <MobileNavBar />
 
               {/* Floating Home Indicator Bar */}
               <div className="phone-home-indicator-wrap" aria-hidden="true">
