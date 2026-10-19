@@ -70,11 +70,6 @@ function loadSavedMessages(patientId, currentLang = 'en') {
     if (raw) {
       const parsed = JSON.parse(raw)
       if (Array.isArray(parsed) && parsed.length > 0) {
-        // If currentLang is 'en' but saved messages are in Tamil, ignore stale messages so user gets clean English
-        const hasTamil = parsed.some((m) => /[\u0B80-\u0BFF]/.test(m.text || ''))
-        if (currentLang === 'en' && hasTamil) {
-          return null
-        }
         return parsed
       }
     }
