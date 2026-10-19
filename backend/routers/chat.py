@@ -73,8 +73,7 @@ class ChatResponse(BaseModel):
 
 def generate_mock_response(preferred_name: str, distress_level: str) -> str:
     """
-    Generate a warm, gentle, stage-appropriate mock companion response.
-    Clearly labeled to indicate prototype/mock mode without claiming clinical intervention.
+    Generate a warm, gentle, stage-appropriate companion response when AI client is in prototype fallback.
     """
     if distress_level == "high":
         return (
@@ -147,7 +146,7 @@ async def chat_with_patient(patient_id: str, request: ChatRequest):
                 bot_reply += getattr(block, "text", "")
 
         if not bot_reply:
-            bot_reply = "I am right here with you, Nell."
+            bot_reply = f"I am right here with you, {preferred_name}."
 
         session_store.append_turn(request.session_id, "assistant", bot_reply, distress=distress_result)
         audio_payload = await voice_service.synthesize_speech(patient_id, bot_reply)

@@ -112,12 +112,10 @@ export default function CompanionChat() {
     return isCustom ? stored : 'patient_kalyani'
   })
 
-  // Default to Tamil for Kalyani, English for Nell
+  // Default to English everywhere as requested
   const [langMode, setLangMode] = useState(() => {
     const stored = localStorage.getItem('kural_lang_mode')
-    if (stored) return stored
-    const patientId = localStorage.getItem('kural_active_patient_id') || 'patient_kalyani'
-    return patientId === 'patient_kalyani' ? 'ta' : 'en'
+    return stored || 'en'
   })
 
   // View mode: 'chat' (active focused conversation) or 'overview' (memories & anchors)
@@ -211,7 +209,7 @@ export default function CompanionChat() {
     setActivePatientId(newId)
     localStorage.setItem('kural_active_patient_id', newId)
     setSessionId(createSessionId(newId))
-    const nextLang = defaultLang || (newId === 'patient_kalyani' ? 'ta' : 'en')
+    const nextLang = defaultLang || 'en'
     setLangMode(nextLang)
     localStorage.setItem('kural_lang_mode', nextLang)
     setShowPatientDropdown(false)
@@ -247,7 +245,7 @@ export default function CompanionChat() {
         setPatientData(patient)
         const preferred = patient.preferred_name || patient.name || 'Friend'
 
-        const isTamil = langMode === 'ta' || (patient.language && patient.language.toLowerCase().includes('tamil'))
+        const isTamil = langMode === 'ta'
 
         const welcomeText = isTamil
           ? `வணக்கம், ${preferred}. உங்களோடு அமைதியாகப் பேசுவதில் மிக்க மகிழ்ச்சி. பொறுமையாகப் பேசுங்கள், நான் எப்போதும் உங்களுடன்தான் இருக்கிறேன்.`
@@ -336,9 +334,13 @@ export default function CompanionChat() {
         message: trimmed,
       })
 
-      const replyText = data.response || 'No response returned.'
-      const isMock = replyText.includes('[Mock Companion]') || replyText.includes('[Mocked')
+      const rawReply = data.response || 'No response returned.'
+      const isMock = rawReply.includes('[Mock Companion]') || rawReply.includes('[Mocked')
       setIsMockMode(isMock)
+      const cleanReply = rawReply
+        .replace(/\[Mock Companion\]\s*/gi, '')
+        .replace(/\[Mocked.*?\]\s*/gi, '')
+        .trim()
 
       if (data.distress) {
         setLatestDistress(data.distress)
@@ -348,7 +350,7 @@ export default function CompanionChat() {
       const companionMessage = {
         id: 'cmp_' + Date.now(),
         sender: 'companion',
-        text: replyText,
+        text: cleanReply,
         timestamp: new Date().toISOString(),
         distress: data.distress,
         isMock: isMock,
@@ -363,7 +365,7 @@ export default function CompanionChat() {
 
       // Automatic Voice Cloning Playback: immediately speaks in caregiver's voice
       if (autoVoiceEnabled) {
-        playAudioResponse(data.audio, replyText, companionMessage.id)
+        playAudioResponse(data.audio, cleanReply, companionMessage.id)
       }
     } catch (err) {
       setError(err.message || 'Unable to connect to companion service.')
@@ -388,7 +390,7 @@ export default function CompanionChat() {
       localStorage.removeItem(`kural_chat_messages_${activePatientId}`)
     } catch {}
     const preferred = patientData?.preferred_name || patientData?.name || 'Friend'
-    const isTamil = langMode === 'ta' || (patientData?.language && patientData.language.toLowerCase().includes('tamil'))
+    const isTamil = langMode === 'ta'
     const welcomeText = isTamil
       ? `வணக்கம், ${preferred}. இன்றைய புதிய உரையாடல் தொடங்கியது. அமைதியாகப் பேசுங்கள், நான் உங்களுடன்தான் இருக்கிறேன்.`
       : `Hello, ${preferred}. A fresh conversation has started. Tell me whatever is on your heart. I am right here with you.`
@@ -669,8 +671,6 @@ export default function CompanionChat() {
             <span className="brand-tamil">குரல்</span>
             <span className="brand-kural">KURAL</span>
           </div>
-          <span className="header-divider-v">|</span>
-          <span className="chat-header-sub">{langMode === 'ta' ? 'நினைவுப் பராமரிப்பு' : 'Dementia Memory Care'}</span>
         </div>
 
         <div className="chat-header-person">
@@ -680,8 +680,8 @@ export default function CompanionChat() {
             onClick={toggleAutoVoice}
             title={
               autoVoiceEnabled
-                ? 'Auto-Voice ON: Cloned caregiver voice plays automatically for each reply. Tap to mute.'
-                : 'Auto-Voice MUTED: Tap to enable automatic cloned speech.'
+                ? 'Auto-Voice ON: Voice speaks automatically. Tap to mute.'
+                : 'Auto-Voice MUTED: Tap to enable automatic speech.'
             }
             aria-label="Toggle auto voice playback"
           >
@@ -692,7 +692,7 @@ export default function CompanionChat() {
             type="button"
             className={`btn-lang-toggle ${langMode === 'ta' ? 'lang-ta-active' : ''}`}
             onClick={toggleLanguage}
-            title="Switch conversation language between English and தமிழ்"
+            title="Switch language between English and தமிழ்"
           >
             {langMode === 'ta' ? '🇮🇳 தமிழ்' : '🇬🇧 EN'}
           </button>
@@ -703,7 +703,7 @@ export default function CompanionChat() {
             onClick={() => setShowPatientDropdown((prev) => !prev)}
             role="button"
             tabIndex={0}
-            title="Switch between Kalyani Amma and Nell"
+            title="Switch elder profile"
           >
             <div className="person-header-info">
               <span className="person-header-name">
@@ -733,13 +733,12 @@ export default function CompanionChat() {
             <div className="dropdown-patient-list">
               {allPatients.map((p) => {
                 const isCurrent = p.patient_id === activePatientId
-                const isTamil = p.patient_id === 'patient_kalyani' || (p.language && p.language.toLowerCase().includes('tamil'))
                 return (
                   <button
                     key={p.patient_id}
                     type="button"
                     className={`dropdown-patient-card ${isCurrent ? 'current-patient' : ''}`}
-                    onClick={() => handleSwitchPatient(p.patient_id, isTamil ? 'ta' : 'en')}
+                    onClick={() => handleSwitchPatient(p.patient_id, langMode)}
                   >
                     <div className="dropdown-avatar-wrap">
                       <img
@@ -755,7 +754,7 @@ export default function CompanionChat() {
                         {isCurrent && <span className="badge-active-tag">Active</span>}
                       </span>
                       <span className="dropdown-patient-sub">
-                        {isTamil ? '🇮🇳 Tamil Voice • Meera' : '🇬🇧 English Voice • Clara'}
+                        {p.patient_id === 'patient_kalyani' ? 'Tamil & English • Meera' : 'English Voice • Clara'}
                       </span>
                     </div>
                     <span className="dropdown-arrow">{isCurrent ? '✓' : '→'}</span>
@@ -905,9 +904,6 @@ export default function CompanionChat() {
                     <div className="bubble-header-bar">
                       <span className="bubble-sender-name">
                         {msg.sender === 'user' ? `${caregiverName} (You)` : `${preferredName}'s Kural`}
-                        {msg.sender === 'companion' && msg.isMock && (
-                          <span className="tag-mock-dark">mock</span>
-                        )}
                         {speakingMessageId === msg.id && (
                           <span className="bubble-speaking-badge">
                             <span className="mini-bars">

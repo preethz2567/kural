@@ -125,7 +125,7 @@ export default function LandingPage() {
             <span>DEMENTIA CAREGIVER COMMAND</span>
           </div>
 
-          <h2 className="card-headline">Dementia Telemetry &amp; Caregiver Sync</h2>
+          <h2 className="card-headline">Dementia Telemetry &amp; Caregiver Command</h2>
           <p className="card-description">
             Track circadian sundowning, anchor treasured memories, and monitor real-time tranquility scores with doctor-ready clinical logs.
           </p>

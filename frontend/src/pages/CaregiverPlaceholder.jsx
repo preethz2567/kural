@@ -468,14 +468,14 @@ Generated with love by Kural Dementia Companion Care.
         speaker_name: speaker,
         relation: relation,
         audio_base64: recordedAudioUrl,
-        language: activePatient?.language || 'Tamil',
+        language: activePatient?.language || 'English',
         cadence_preset: selectedCadence,
       })
 
       const refreshed = await getVoiceProfile(activePatientId).catch(() => res)
       setVoiceProfile(refreshed)
       setCloneSuccessToast(
-        `✓ Voice model successfully trained for ${speaker}! Model: Coqui XTTS-v2. Companion Chat will now speak automatically in ${speaker}'s authentic voice.`
+        `✓ Voice model successfully trained for ${speaker}! Companion Chat will now speak automatically in ${speaker}'s authentic voice.`
       )
       setTimeout(() => setCloneSuccessToast(null), 5000)
     } catch (err) {
@@ -646,7 +646,7 @@ Generated with love by Kural Dementia Companion Care.
           className={`workspace-tab-btn ${activeTab === 'access' ? 'active-tab' : ''}`}
           onClick={() => setActiveTab('access')}
         >
-          🔐 Portal Access &amp; Keys
+          🔐 Caregiver Access &amp; Account
         </button>
       </div>
 
@@ -1171,7 +1171,7 @@ Generated with love by Kural Dementia Companion Care.
             </div>
             <div className="identity-passkey-badge">
               <span className="passkey-dot">●</span>
-              <span>Passkey: KURAL-{activePatientId.toUpperCase().slice(-6)}</span>
+              <span>Caregiver ID: KURAL-{activePatientId.toUpperCase().slice(-6)}</span>
             </div>
           </div>
 
