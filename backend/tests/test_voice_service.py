@@ -62,7 +62,7 @@ def test_synthesize_speech_endpoint(client):
 def test_chat_returns_cloned_voice_audio(client):
     res = client.post(
         "/chat/patient_001",
-        json={"session_id": "test_voice_auto_play", "message": "Good morning!"}
+        json={"session_id": "test_voice_auto_play", "message": "Good morning!", "include_audio": True}
     )
     assert res.status_code == 200
     data = res.json()
