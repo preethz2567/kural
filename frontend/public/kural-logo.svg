@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <!-- Outer Sage/Mint Circle -->
+  <circle cx="50" cy="50" r="48" fill="#88bfa8" />
+
+  <!-- Inner Soft Pastel Pink Squircle -->
+  <rect x="15" y="15" width="70" height="70" rx="30" fill="#fbc8d2" />
+
+  <!-- Minimalist Black Line Art: Heart Flower with Stem and Leaves -->
+  <g stroke="#1a1a1a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- Heart Blossom -->
+    <path d="M 50 63.5 C 44 57 37 49 37 42 C37 36.5 41.5 32.5 46.5 34 C 48.5 34.6 50 36.8 50 36.8 C 50 36.8 51.5 34.6 53.5 34 C 58.5 32.5 63 36.5 63 42 C 63 49 56 57 50 63.5 Z" />
+
+    <!-- Flower Stem -->
+    <path d="M 50 63.5 L 50 85" />
+
+    <!-- Right Leaf -->
+    <path d="M 50 71.5 C 53 68 59 66 65 67 C 65 72 61 76 50 73.5" />
+    <path d="M 50 71.5 L 61 68" />
+
+    <!-- Left Leaf -->
+    <path d="M 50 76.5 C 46 73 40 71 35 73 C 36 78 41 81 50 78.5" />
+    <path d="M 50 76.5 L 39 74" />
+  </g>
+</svg>
