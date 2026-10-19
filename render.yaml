@@ -10,7 +10,7 @@ services:
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: ANTHROPIC_MODEL
-        value: claude-3-5-haiku-20241022
+        value: claude-haiku-5-5
       - key: VOICE_CLONING_SERVICE_URL
         sync: false
       - key: ML_DISTRESS_SERVICE_URL
