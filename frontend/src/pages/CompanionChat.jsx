@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { checkBackendHealth, fetchPatient, sendChatMessage, listPatients } from '../api.js'
+import { checkBackendHealth, fetchPatient, sendChatMessage, listPatients, synthesizeVoiceSpeech } from '../api.js'
 import { CADENCE_PRESETS } from '../cadencePresets.js'
 import { playClonedAudio, unlockAudio } from '../audioUtils.js'
 import KuralLogo from '../components/KuralLogo.jsx'

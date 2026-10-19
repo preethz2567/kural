@@ -9,4 +9,6 @@ backend/.env
 node_modules/
 dist/
 dev-dist/
+frontend/dist/
+frontend/dev-dist/
 .DS_Store
