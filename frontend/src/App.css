@@ -27,7 +27,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 24px;
+  gap: 30px;
   width: 100%;
   max-width: 1220px;
   margin: 0 auto;
@@ -557,16 +557,16 @@
 /* Responsive adjustments for desktop sidebars */
 @media (max-width: 1380px) {
   .web-showcase-sidebar {
-    width: 320px;
+    width: 325px;
   }
 
   .web-showcase-stage {
-    gap: 20px;
+    gap: 36px;
   }
 }
 
-/* Collapse sidebars on medium screens (681px - 1140px) to keep phone prominent */
-@media (max-width: 1140px) {
+/* Collapse sidebars on medium screens (681px - 1160px) to keep phone prominent */
+@media (max-width: 1160px) {
   .web-showcase-sidebar {
     display: none;
   }
