@@ -2522,6 +2522,38 @@
   background: rgba(255, 255, 255, 0.18);
 }
 
+.cloned-voice-bubble-badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #a78bfa;
+  background: rgba(167, 139, 250, 0.12);
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  border-radius: 9999px;
+  padding: 2px 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cloned-voice-preparing-badge {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #f43f5e;
+  background: rgba(244, 63, 94, 0.12);
+  border: 1px solid rgba(244, 63, 94, 0.25);
+  border-radius: 9999px;
+  padding: 2px 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  animation: pulse-voice 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse-voice {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
 /* --------------------------------------------------------------------------
    Landing & Profiles Styles under Stitch Dark Theme
    -------------------------------------------------------------------------- */
