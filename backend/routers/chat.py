@@ -66,18 +66,22 @@ class ChatRequest(BaseModel):
     session_id: str
     message: str
     language: Optional[str] = "en"
+    include_audio: Optional[bool] = False
 
 class ChatResponse(BaseModel):
     response: str
     distress: Optional[Dict[str, Any]] = None
     audio: Optional[Dict[str, Any]] = None
 
-def generate_mock_response(preferred_name: str, distress_level: str, language: str = "en") -> str:
+def generate_mock_response(preferred_name: str, distress_level: str, language: str = "en", user_message: str = "") -> str:
     """
     Generate a warm, gentle, stage-appropriate companion response when AI client is in prototype fallback.
+    Mirrors Tamil if the incoming message has Tamil characters or if Tamil language is selected.
+    Allows natural warm Tanglish and conversational English with cultural warmth.
     """
+    has_tamil = any("\u0b80" <= c <= "\u0bff" for c in user_message)
     lang = (language or "en").lower().strip()
-    if lang == "ta":
+    if lang == "ta" or has_tamil:
         if distress_level == "high":
             return (
                 f"[Mock Companion] நான் உங்களுடன்தான் இருக்கிறேன், {preferred_name}. "
@@ -119,6 +123,7 @@ async def chat_with_patient(patient_id: str, request: ChatRequest):
     system_prompt = build_system_prompt(patient)
     preferred_name = patient.preferred_name or patient.name
     req_lang = (request.language or "en").lower().strip()
+    has_tamil = any("\u0b80" <= c <= "\u0bff" for c in request.message)
 
     # 1. Append user message to history first so repetition counts reflect this turn
     session_store.append_turn(request.session_id, "user", request.message)
@@ -135,17 +140,37 @@ async def chat_with_patient(patient_id: str, request: ChatRequest):
     # 3. If no live Anthropic client, return clearly labeled mock companion response
     active_client = get_active_client()
     if not active_client:
-        bot_reply = generate_mock_response(preferred_name, distress_result.get("level", "none"), language=req_lang)
+        bot_reply = generate_mock_response(
+            preferred_name, 
+            distress_result.get("level", "none"), 
+            language=req_lang, 
+            user_message=request.message
+        )
         session_store.append_turn(request.session_id, "assistant", bot_reply, distress=distress_result)
-        audio_payload = await voice_service.synthesize_speech(patient_id, bot_reply)
+        audio_payload = None
+        if request.include_audio:
+            audio_payload = await voice_service.synthesize_speech(
+                patient_id, 
+                bot_reply, 
+                language="ta" if has_tamil else req_lang
+            )
         return ChatResponse(response=bot_reply, distress=distress_result, audio=audio_payload)
 
     # 4. Live AI Mode
-    # Explicit language instruction for Claude
-    if req_lang == "ta":
-        system_prompt += "\n\n[LANGUAGE INSTRUCTION]: Speak warmly in gentle, spoken conversational Tamil. Use simple Tamil phrases appropriate for memory care."
+    # Natural bilingual and Tamil mirroring language instruction for Claude
+    if has_tamil or req_lang == "ta":
+        system_prompt += (
+            "\n\n[LANGUAGE & CONVERSATIONAL STYLE]: The user sent a message in Tamil. "
+            "Respond warmly and gently in natural spoken conversational Tamil (using everyday, soothing Tamil "
+            "familiar to elders in Tamil Nadu). If the user mixed in English words, naturally mirror their Tanglish."
+        )
     else:
-        system_prompt += "\n\n[LANGUAGE INSTRUCTION]: Speak warmly in gentle, simple, reassuring conversational English. Always respond in English. Do not reply in Tamil unless the patient explicitly asks in Tamil."
+        system_prompt += (
+            "\n\n[LANGUAGE & CONVERSATIONAL STYLE]: Responses do not need to be strictly in English. "
+            "You can naturally mix Tamil and English (Tanglish), weaving in familiar South Indian terms of endearment "
+            "and cultural warmth (such as 'Amma', 'kaapi', 'seri', 'kanna', 'kovil') as spoken in bilingual South Indian homes. "
+            "If the user message is in Tamil, respond in Tamil. Mirror the user's language, mixing, and tone with deep empathy and patience."
+        )
 
     # Shift tone dynamically if distress is high
     if distress_result["level"] == "high":
@@ -175,7 +200,13 @@ async def chat_with_patient(patient_id: str, request: ChatRequest):
             bot_reply = f"I am right here with you, {preferred_name}."
 
         session_store.append_turn(request.session_id, "assistant", bot_reply, distress=distress_result)
-        audio_payload = await voice_service.synthesize_speech(patient_id, bot_reply)
+        audio_payload = None
+        if request.include_audio:
+            audio_payload = await voice_service.synthesize_speech(
+                patient_id, 
+                bot_reply, 
+                language="ta" if has_tamil else req_lang
+            )
         
         return ChatResponse(response=bot_reply, distress=distress_result, audio=audio_payload)
     except Exception as e:
