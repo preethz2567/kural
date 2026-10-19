@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { checkBackendHealth, fetchPatient, sendChatMessage, listPatients } from '../api.js'
 import { CADENCE_PRESETS } from '../cadencePresets.js'
-import { base64ToAudioUrl, playClonedAudio, unlockAudio } from '../audioUtils.js'
+import { playClonedAudio, unlockAudio } from '../audioUtils.js'
 import '../App.css'
 
 function createSessionId(prefix = 'sess') {
@@ -20,7 +20,7 @@ function formatTime(isoString) {
 
 function recordDistressTurn(patientId, sessionId, userText, distress) {
   try {
-    const key = `kural_session_distress_${patientId || 'patient_001'}`
+    const key = `kural_session_distress_${patientId || 'patient_kalyani'}`
     const raw = localStorage.getItem(key)
     const existing = raw ? JSON.parse(raw) : { turns: [] }
     const updatedTurns = [
@@ -64,20 +64,71 @@ function formatReactionNote(distress) {
   return 'Reaction: Calm & attentive'
 }
 
+function loadSavedMessages(patientId) {
+  try {
+    const raw = localStorage.getItem(`kural_chat_messages_${patientId || 'patient_kalyani'}`)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+  } catch (err) {
+    console.warn('[Session] Failed to load messages:', err)
+  }
+  return null
+}
+
+function saveSavedMessages(patientId, msgs) {
+  try {
+    localStorage.setItem(`kural_chat_messages_${patientId || 'patient_kalyani'}`, JSON.stringify(msgs))
+  } catch (err) {
+    console.warn('[Session] Failed to save messages:', err)
+  }
+}
+
+const COMFORT_CHIPS = {
+  patient_kalyani: [
+    { label: '🌸 மல்லிகைத் தோட்டம்', prompt: 'அம்மா, காலையில மல்லிகைப் பூ பறிச்ச வாசனை ஞாபகம் இருக்கா? தோட்டம் எவ்வளவு அமைதியா இருந்தது!' },
+    { label: '☕ டிகிரி காபி', prompt: 'அம்மா, பித்தளை டம்ளரில் நுரை பொங்க மணக்க மணக்க டிகிரி காபி குடித்த ஞாபகம் இருக்கா?' },
+    { label: '📻 எம்.எஸ். அம்மா பாடல்', prompt: 'அம்மா, விடியற்காலையில் வானொலியில் ஒலித்த எம்.எஸ். சுப்புலட்சுமியின் வெங்கடேச சுப்ரபாதம் எவ்வளவு அமைதி தரும்!' },
+    { label: '🌿 துளசி மாட பூஜை', prompt: 'அம்மா, மாலை விளக்கேற்றி துளசி மாடத்தை வலம் வந்த அந்த அழகான நினைவுகளைப் பேசுவோமா?' },
+    { label: '🛕 மயிலாப்பூர் கபாலி', prompt: 'அம்மா, மயிலாப்பூர் கபாலீஸ்வரர் கோவில் குளக்கரை தென்றல் காற்று எவ்வளவு மன அமைதி தந்தது!' },
+  ],
+  patient_001: [
+    { label: '🌸 Camellia Blooms', prompt: 'Nell, do you remember the winter camellias blooming in the glass conservatory? They were so vibrant.' },
+    { label: '🍵 Afternoon Tea', prompt: 'Nell, let us sit and imagine having a warm cup of Earl Grey tea with shortbread biscuits.' },
+    { label: '📖 Herbarium Journal', prompt: 'Nell, tell me about your botanical sketches of pressed mountain ferns and wildflowers.' },
+    { label: '🐱 Barnaby the Cat', prompt: 'Nell, do you remember sweet Barnaby sleeping in the sunlit greenhouse beside the terra cotta pots?' },
+    { label: '🌿 Lavender Walk', prompt: 'Nell, remember the sweet calming scent of lavender along the garden pathway in early summer?' },
+  ],
+}
+
 export default function CompanionChat() {
   const navigate = useNavigate()
 
+  // Default to Kalyani Amma (patient_kalyani)
   const [activePatientId, setActivePatientId] = useState(() => {
-    return localStorage.getItem('kural_active_patient_id') || 'patient_001'
+    return localStorage.getItem('kural_active_patient_id') || 'patient_kalyani'
   })
 
+  // Default to Tamil for Kalyani, English for Nell
   const [langMode, setLangMode] = useState(() => {
-    return localStorage.getItem('kural_lang_mode') || 'en'
+    const stored = localStorage.getItem('kural_lang_mode')
+    if (stored) return stored
+    const patientId = localStorage.getItem('kural_active_patient_id') || 'patient_kalyani'
+    return patientId === 'patient_kalyani' ? 'ta' : 'en'
+  })
+
+  // View mode: 'chat' (active focused conversation) or 'overview' (memories & anchors)
+  const [activeViewMode, setActiveViewMode] = useState(() => {
+    return 'chat'
   })
 
   const [sessionId, setSessionId] = useState(() => createSessionId(activePatientId))
   const [patientData, setPatientData] = useState(null)
-  const [messages, setMessages] = useState([])
+  const [messages, setMessages] = useState(() => {
+    const saved = loadSavedMessages(activePatientId)
+    return saved || []
+  })
   const [inputText, setInputText] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -162,6 +213,14 @@ export default function CompanionChat() {
     setLangMode(nextLang)
     localStorage.setItem('kural_lang_mode', nextLang)
     setShowPatientDropdown(false)
+
+    // Load preserved conversation for switched patient
+    const saved = loadSavedMessages(newId)
+    if (saved && saved.length > 0) {
+      setMessages(saved)
+    } else {
+      setMessages([])
+    }
   }
 
   const toggleLanguage = () => {
@@ -186,34 +245,48 @@ export default function CompanionChat() {
         setPatientData(patient)
         const preferred = patient.preferred_name || patient.name || 'Friend'
 
-        // If patient language specifies Tamil, and no manual toggle yet, switch to Tamil
         const isTamil = langMode === 'ta' || (patient.language && patient.language.toLowerCase().includes('tamil'))
 
         const welcomeText = isTamil
           ? `வணக்கம், ${preferred}. உங்களோடு அமைதியாகப் பேசுவதில் மிக்க மகிழ்ச்சி. பொறுமையாகப் பேசுங்கள், நான் எப்போதும் உங்களுடன்தான் இருக்கிறேன்.`
           : `Hello, ${preferred}. It is lovely to sit together today. Take your time, and tell me whatever is on your mind. I am right here with you.`
 
-        setMessages([
-          {
-            id: 'welcome_' + Date.now(),
-            sender: 'companion',
-            text: welcomeText,
-            timestamp: new Date().toISOString(),
-            isMock: false,
-          },
-        ])
+        // Check if there is an existing preserved conversation
+        const saved = loadSavedMessages(activePatientId)
+        if (saved && saved.length > 0) {
+          setMessages(saved)
+        } else {
+          const initial = [
+            {
+              id: 'welcome_' + Date.now(),
+              sender: 'companion',
+              text: welcomeText,
+              timestamp: new Date().toISOString(),
+              isMock: false,
+            },
+          ]
+          setMessages(initial)
+          saveSavedMessages(activePatientId, initial)
+        }
       } catch {
-        setMessages([
-          {
-            id: 'welcome_fallback',
-            sender: 'companion',
-            text: langMode === 'ta'
-              ? 'வணக்கம். உங்களோடு பேசுவதில் மகிழ்ச்சி. பொறுமையாகப் பேசுங்கள்.'
-              : 'Hello. It is wonderful to sit together today. Take your time, and tell me whatever is on your mind.',
-            timestamp: new Date().toISOString(),
-            isMock: false,
-          },
-        ])
+        const saved = loadSavedMessages(activePatientId)
+        if (saved && saved.length > 0) {
+          setMessages(saved)
+        } else {
+          const fallback = [
+            {
+              id: 'welcome_fallback',
+              sender: 'companion',
+              text: langMode === 'ta'
+                ? 'வணக்கம். உங்களோடு பேசுவதில் மகிழ்ச்சி. பொறுமையாகப் பேசுங்கள்.'
+                : 'Hello. It is wonderful to sit together today. Take your time, and tell me whatever is on your mind.',
+              timestamp: new Date().toISOString(),
+              isMock: false,
+            },
+          ]
+          setMessages(fallback)
+          saveSavedMessages(activePatientId, fallback)
+        }
       }
     }
 
@@ -222,14 +295,19 @@ export default function CompanionChat() {
   }, [activePatientId, langMode])
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isLoading])
+    if (activeViewMode === 'chat') {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [messages, isLoading, activeViewMode])
 
   const handleSend = async (customPrompt) => {
     unlockAudio()
     const textToSend = typeof customPrompt === 'string' ? customPrompt : inputText
     const trimmed = textToSend.trim()
     if (!trimmed || isLoading) return
+
+    // Automatically transition to chat view when a message is sent
+    setActiveViewMode('chat')
 
     const userMessage = {
       id: 'usr_' + Date.now(),
@@ -238,7 +316,12 @@ export default function CompanionChat() {
       timestamp: new Date().toISOString(),
     }
 
-    setMessages((prev) => [...prev, userMessage])
+    setMessages((prev) => {
+      const updated = [...prev, userMessage]
+      saveSavedMessages(activePatientId, updated)
+      return updated
+    })
+
     if (typeof customPrompt !== 'string') {
       setInputText('')
     }
@@ -270,7 +353,11 @@ export default function CompanionChat() {
         audio: data.audio || null,
       }
 
-      setMessages((prev) => [...prev, companionMessage])
+      setMessages((prev) => {
+        const updated = [...prev, companionMessage]
+        saveSavedMessages(activePatientId, updated)
+        return updated
+      })
 
       // Automatic Voice Cloning Playback: immediately speaks in caregiver's voice
       if (autoVoiceEnabled) {
@@ -296,13 +383,14 @@ export default function CompanionChat() {
     setSessionId(newId)
     try {
       localStorage.removeItem(`kural_session_distress_${activePatientId}`)
+      localStorage.removeItem(`kural_chat_messages_${activePatientId}`)
     } catch {}
     const preferred = patientData?.preferred_name || patientData?.name || 'Friend'
     const isTamil = langMode === 'ta' || (patientData?.language && patientData.language.toLowerCase().includes('tamil'))
     const welcomeText = isTamil
       ? `வணக்கம், ${preferred}. இன்றைய புதிய உரையாடல் தொடங்கியது. அமைதியாகப் பேசுங்கள், நான் உங்களுடன்தான் இருக்கிறேன்.`
       : `Hello, ${preferred}. A fresh conversation has started. Tell me whatever is on your heart. I am right here with you.`
-    setMessages([
+    const freshMessages = [
       {
         id: 'welcome_' + Date.now(),
         sender: 'companion',
@@ -310,7 +398,9 @@ export default function CompanionChat() {
         timestamp: new Date().toISOString(),
         isMock: false,
       },
-    ])
+    ]
+    setMessages(freshMessages)
+    saveSavedMessages(activePatientId, freshMessages)
     setLatestDistress({ level: 'none', reason: 'Fresh session started' })
     setError(null)
   }
@@ -322,12 +412,11 @@ export default function CompanionChat() {
 
   // Dynamic caregiver link name based on actual relationships in the profile
   const caregiverRelation = patientData?.relationships?.[0]
-  const caregiverName = caregiverRelation ? caregiverRelation.name : 'Caregiver'
+  const caregiverName = caregiverRelation ? caregiverRelation.name : (activePatientId === 'patient_kalyani' ? 'Meera' : 'Clara')
 
   // Dynamically build emotional anchors from the actual patient data
   const dynamicAnchors = []
 
-  // 1. Cherished memories
   if (patientData?.cherished_memories && patientData.cherished_memories.length > 0) {
     patientData.cherished_memories.slice(0, 2).forEach((mem, idx) => {
       dynamicAnchors.push({
@@ -343,7 +432,6 @@ export default function CompanionChat() {
     })
   }
 
-  // 2. Preferences likes
   if (patientData?.preferences?.likes && patientData.preferences.likes.length > 0) {
     patientData.preferences.likes.slice(0, 2).forEach((like, idx) => {
       dynamicAnchors.push({
@@ -359,7 +447,6 @@ export default function CompanionChat() {
     })
   }
 
-  // Fallback anchors if profile has no custom data yet
   if (dynamicAnchors.length === 0) {
     dynamicAnchors.push(
       {
@@ -385,7 +472,6 @@ export default function CompanionChat() {
     )
   }
 
-  // Voice Input (Web Speech Recognition) & Speech Synthesis (TTS)
   const [isListening, setIsListening] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const recognitionRef = useRef(null)
@@ -455,7 +541,6 @@ export default function CompanionChat() {
     const cleanText = textToSpeak.replace(/\[.*?\]/g, '').trim()
     const utterance = new SpeechSynthesisUtterance(cleanText)
 
-    // Apply configured caregiver cadence preset
     const cadenceKey = localStorage.getItem('kural_voice_cadence') || 'maternal'
     const preset = CADENCE_PRESETS[cadenceKey] || CADENCE_PRESETS.maternal
     utterance.rate = preset.rate
@@ -529,7 +614,6 @@ export default function CompanionChat() {
       return
     }
 
-    // Fallback if no audio payload or synthesis failed
     if (textFallback) {
       speakReply(textFallback, msgId)
     }
@@ -677,22 +761,6 @@ export default function CompanionChat() {
                 )
               })}
             </div>
-            <div className="dropdown-footer">
-              <Link
-                to="/onboarding"
-                className="dropdown-add-link"
-                onClick={() => setShowPatientDropdown(false)}
-              >
-                + Setup New Elder Profile
-              </Link>
-              <Link
-                to="/profiles"
-                className="dropdown-all-link"
-                onClick={() => setShowPatientDropdown(false)}
-              >
-                Full Directory →
-              </Link>
-            </div>
           </div>
         )}
       </header>
@@ -745,336 +813,451 @@ export default function CompanionChat() {
             <Link to="/caregiver" className="cadence-mini-tune" title="Adjust voice cadence in Caregiver Workspace">⚙</Link>
           </div>
         </div>
-
-        {/* Familiar Caregiver Voice Greeting Player */}
-        <div className="family-voice-banner">
-          <div className="family-voice-left">
-            <div className="family-voice-icon-circle">
-              <span className="family-voice-icon">🎙️</span>
-            </div>
-            <div>
-              <span className="family-voice-eyebrow">
-                {langMode === 'ta' ? 'அன்பான குடும்பக் குரல்' : 'FAMILIAR FAMILY VOICE'}
-              </span>
-              <span className="family-voice-title">
-                {caregiverName}&apos;s {langMode === 'ta' ? 'அன்பு வாழ்த்து' : 'Personal Greeting'}
-              </span>
-            </div>
-          </div>
-          <button
-            type="button"
-            className={`btn-play-family-greeting ${isPlayingFamilyVoice ? 'greeting-playing' : ''}`}
-            onClick={handlePlayFamilyGreeting}
-          >
-            {isPlayingFamilyVoice ? (
-              <span className="playing-waveform">❙❙❙ {langMode === 'ta' ? 'ஒலிக்கிறது...' : 'Playing...'}</span>
-            ) : (
-              <span>▶ {langMode === 'ta' ? 'வாழ்த்தைக் கேள்' : 'Play Greeting'}</span>
-            )}
-          </button>
-        </div>
       </div>
 
-      {/* Main Section Banner */}
-      <section className="companion-hero-callout">
-        <h1 className="companion-hero-title">Stay close, even from afar.</h1>
-        <p className="companion-hero-sub">
-          Small messages can become familiar, reassuring moments in their day.
-        </p>
+      {/* View Mode Segmented Tab Switcher */}
+      <div className="companion-view-tab-bar">
+        <button
+          type="button"
+          className={`view-tab-pill ${activeViewMode === 'chat' ? 'view-tab-active' : ''}`}
+          onClick={() => setActiveViewMode('chat')}
+        >
+          💬 {langMode === 'ta' ? 'உரையாடல்' : 'Conversation'}
+          {messages.length > 0 && <span className="tab-count-badge">{messages.length}</span>}
+        </button>
+        <button
+          type="button"
+          className={`view-tab-pill ${activeViewMode === 'overview' ? 'view-tab-active' : ''}`}
+          onClick={() => setActiveViewMode('overview')}
+        >
+          🌿 {langMode === 'ta' ? 'நினைவுகள் & சுவடுகள்' : 'Memories & Anchors'}
+        </button>
+      </div>
 
-        {/* Dynamic Portrait Hero Card */}
-        <div className="hero-portrait-card">
-          <img
-            src={activePatientId === 'patient_kalyani' ? '/hero_family.jpg' : '/hero_nell.jpg'}
-            alt={activePatientId === 'patient_kalyani' ? 'Kalyani Amma and family' : 'Nell Vance and daughter'}
-            className="hero-portrait-image"
-          />
-          <div className="portrait-overlay-strip">
-            <div className="overlay-person-badge">
+      {/* =========================================================================
+          VIEW MODE 1: CHAT (Active, focused conversation stream)
+          ========================================================================= */}
+      {activeViewMode === 'chat' && (
+        <div className="chat-focused-container">
+          {/* Compact Elder Session Header */}
+          <div className="chat-compact-bar">
+            <div className="chat-compact-elder">
               <img
                 src={activePatientId === 'patient_kalyani' ? '/avatar_amma.jpg' : '/avatar_nell.jpg'}
                 alt={preferredName}
-                className="overlay-mini-avatar-img"
+                className="chat-compact-avatar"
               />
               <div>
-                <div className="overlay-name-row">
-                  <span className="overlay-name">{preferredName}</span>
-                  <span className="connected-chip">• Connected</span>
+                <div className="chat-compact-name-row">
+                  <span className="chat-compact-name">{preferredName}</span>
+                  <span className="status-dot-green"></span>
+                  <span className="chat-compact-status">{langMode === 'ta' ? 'இணைப்பு' : 'Connected'}</span>
                 </div>
-                <div className="overlay-stage">{stageDisplay}</div>
+                <div className="chat-compact-sub">
+                  🎙️ {caregiverName}&apos;s Cloned Voice • {stageDisplay}
+                </div>
               </div>
             </div>
-            <button
-              type="button"
-              className="refresh-circle-btn"
-              onClick={handleResetConversation}
-              title="Reset conversation"
-            >
-              🔄
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Kural Suggestion Compass Card (Dynamic) */}
-      <section className="kural-suggestion-card">
-        <div className="suggestion-top-row">
-          <span className="suggestion-badge">✪ KURAL&apos;S SUGGESTION</span>
-          <span className="compass-pill">{stageDisplay}</span>
-        </div>
-        <h2 className="suggestion-heading">A little guidance for today</h2>
-        <p className="suggestion-body">
-          {patientData?.preferences?.likes?.length > 0
-            ? `“A calm voice and familiar topics can make conversations feel easier. Mention ${patientData.preferences.likes.slice(0, 2).join(' or ')}, family memories, or afternoon rituals.”`
-            : `“A calm voice and familiar topics can make conversations feel easier. Mention today's weather, family names, or simple afternoon tea rituals.”`}
-        </p>
-        <div className="suggestion-footer-row">
-          <span className="suggestion-recap-text">Tuned for {preferredName}</span>
-          <button
-            type="button"
-            className="apply-prompt-btn"
-            onClick={() =>
-              handleSend(
-                patientData?.preferences?.likes?.[0]
-                  ? `Tell me about ${patientData.preferences.likes[0]}. It always brings such comfort and peace to think about.`
-                  : "Tell me about a peaceful morning, sipping warm tea and listening to quiet sounds."
-              )
-            }
-          >
-            Apply prompt ↗
-          </button>
-        </div>
-      </section>
-
-      {/* Emotional Anchors Grid (Dynamic based on selected profile) */}
-      <section className="emotional-anchors-section">
-        <div className="anchors-header-block">
-          <span className="anchors-eyebrow">EMOTIONAL ANCHORS</span>
-          <h2 className="anchors-title">Little things {preferredName} knows by heart.</h2>
-          <p className="anchors-sub">
-            Familiar anchors from {preferredName}&apos;s profile that comfort them. Tap any card to attach to conversation.
-          </p>
-        </div>
-
-        <div className="anchors-grid">
-          {dynamicAnchors.map((anchor, index) => (
-            <div
-              key={index}
-              className="anchor-card"
-              onClick={() => handleSend(anchor.prompt)}
-              role="button"
-              tabIndex={0}
-            >
-              <div className="anchor-card-top icon-top">
-                <span className="anchor-icon-symbol">{anchor.icon}</span>
-                <div className="anchor-symbol-title">{anchor.title}</div>
-                <div className="anchor-symbol-sub">{anchor.subtitle}</div>
-              </div>
-              <div className="anchor-pill-tag">{anchor.tag}</div>
-              <p className="anchor-snippet">{anchor.snippet}</p>
-              <div className="anchor-footer">
-                <span className="anchor-category">{anchor.category}</span>
-                <span className="anchor-arrow">↑</span>
-              </div>
+            <div className="chat-compact-actions">
+              <button
+                type="button"
+                className={`chat-compact-play-btn ${isPlayingFamilyVoice ? 'greeting-playing' : ''}`}
+                onClick={handlePlayFamilyGreeting}
+                title="Play familiar family voice greeting"
+              >
+                {isPlayingFamilyVoice ? '❙❙ Playing' : '▶ Greeting'}
+              </button>
+              <button
+                type="button"
+                className="chat-compact-reset-btn"
+                onClick={handleResetConversation}
+                title="Start a fresh conversation and baseline tranquility for today"
+              >
+                🔄 Fresh Day
+              </button>
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Archival Trail: Live Conversation Stream */}
-      <section className="archival-trail-section">
-        <div className="archival-header">
-          <div>
-            <span className="archival-eyebrow">ARCHIVAL TRAIL</span>
-            <h2 className="archival-title">Conversation with Kural</h2>
           </div>
-          <div className="archival-status-chips">
-            <span className={`sync-pill ${isMockMode ? 'mode-mock' : 'mode-live'}`}>
-              {isMockMode ? 'Offline Prototype' : 'Synced with Claude'}
-            </span>
-            <button
-              type="button"
-              className="btn-fresh-session"
-              onClick={handleResetConversation}
-              title="Start a fresh conversation and baseline tranquility for today"
-            >
-              🔄 Fresh Day
-            </button>
-          </div>
-        </div>
 
-        {backendStatus === 'retrying' && (
-          <div className="banner banner-warning">
-            Backend warming up — messages will send momentarily.
-          </div>
-        )}
+          {/* Conversation Stream */}
+          <section className="archival-trail-section chat-trail-focused">
+            {backendStatus === 'retrying' && (
+              <div className="banner banner-warning">
+                Backend warming up — messages will send momentarily.
+              </div>
+            )}
 
-        {error && (
-          <div className="banner banner-error">
-            <span><strong>Notice:</strong> {error}</span>
-            <button className="btn-dismiss" onClick={() => setError(null)} type="button">Dismiss</button>
-          </div>
-        )}
+            {error && (
+              <div className="banner banner-error">
+                <span><strong>Notice:</strong> {error}</span>
+                <button className="btn-dismiss" onClick={() => setError(null)} type="button">Dismiss</button>
+              </div>
+            )}
 
-        <div className="chat-timeline-stream">
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`timeline-bubble-wrap ${msg.sender === 'user' ? 'bubble-wrap-user' : 'bubble-wrap-companion'}`}
-            >
-              <div className={`timeline-bubble ${speakingMessageId === msg.id ? 'bubble-currently-speaking' : ''}`}>
-                <div className="bubble-header-bar">
-                  <span className="bubble-sender-name">
-                    {msg.sender === 'user' ? `${caregiverName} (You)` : `Kural Companion`}
-                    {msg.sender === 'companion' && msg.isMock && (
-                      <span className="tag-mock-dark">mock</span>
-                    )}
-                    {speakingMessageId === msg.id && (
-                      <span className="bubble-speaking-badge">
-                        <span className="mini-bars">
-                          <span className="m-bar mb-1"></span>
-                          <span className="m-bar mb-2"></span>
-                          <span className="m-bar mb-3"></span>
-                        </span>
-                        Speaking
+            <div className="chat-timeline-stream">
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`timeline-bubble-wrap ${msg.sender === 'user' ? 'bubble-wrap-user' : 'bubble-wrap-companion'}`}
+                >
+                  <div className={`timeline-bubble ${speakingMessageId === msg.id ? 'bubble-currently-speaking' : ''}`}>
+                    <div className="bubble-header-bar">
+                      <span className="bubble-sender-name">
+                        {msg.sender === 'user' ? `${caregiverName} (You)` : `${preferredName}'s Kural`}
+                        {msg.sender === 'companion' && msg.isMock && (
+                          <span className="tag-mock-dark">mock</span>
+                        )}
+                        {speakingMessageId === msg.id && (
+                          <span className="bubble-speaking-badge">
+                            <span className="mini-bars">
+                              <span className="m-bar mb-1"></span>
+                              <span className="m-bar mb-2"></span>
+                              <span className="m-bar mb-3"></span>
+                            </span>
+                            Speaking
+                          </span>
+                        )}
                       </span>
+                      <span className="bubble-timestamp">{formatTime(msg.timestamp)}</span>
+                    </div>
+                    <div className="bubble-text-content">{msg.text}</div>
+                    {msg.sender === 'companion' && (
+                      <div className="bubble-bottom-row">
+                        <button
+                          type="button"
+                          className={`btn-speak-bubble ${speakingMessageId === msg.id ? 'bubble-is-playing' : ''}`}
+                          onClick={() => {
+                            if (speakingMessageId === msg.id) {
+                              stopSpeaking()
+                            } else if (msg.audio?.audio_base64) {
+                              playAudioResponse(msg.audio, msg.text, msg.id)
+                            } else {
+                              speakReply(msg.text, msg.id)
+                            }
+                          }}
+                          title={speakingMessageId === msg.id ? 'Stop audio' : 'Replay in voice'}
+                        >
+                          {speakingMessageId === msg.id ? '⏹ Stop' : isSpeaking ? '🔊 Replay' : '▶ Replay'}
+                        </button>
+                        {msg.audio?.speaker_name && (
+                          <span className="cloned-voice-bubble-badge" title="Synthesized with open-source Coqui XTTS-v2 voice model">
+                            🎙️ {msg.audio.speaker_name}&apos;s Cloned Voice
+                          </span>
+                        )}
+                        <div className={`bubble-reaction-note reaction-level-${msg.distress?.level || 'none'}`}>
+                          <span>{formatReactionNote(msg.distress)}</span>
+                          {msg.distress?.matched_keywords?.length > 0 && (
+                            <span className="reaction-trigger-tag">
+                              Triggers: {msg.distress.matched_keywords.join(', ')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     )}
-                  </span>
-                  <span className="bubble-timestamp">{formatTime(msg.timestamp)}</span>
+                  </div>
                 </div>
-                <div className="bubble-text-content">{msg.text}</div>
-                {msg.sender === 'companion' && (
-                  <div className="bubble-bottom-row">
-                    <button
-                      type="button"
-                      className={`btn-speak-bubble ${speakingMessageId === msg.id ? 'bubble-is-playing' : ''}`}
-                      onClick={() => {
-                        if (speakingMessageId === msg.id) {
-                          stopSpeaking()
-                        } else if (msg.audio?.audio_base64) {
-                          playAudioResponse(msg.audio, msg.text, msg.id)
-                        } else {
-                          speakReply(msg.text, msg.id)
-                        }
-                      }}
-                      title={speakingMessageId === msg.id ? 'Stop audio' : 'Replay in voice'}
-                    >
-                      {speakingMessageId === msg.id ? '⏹ Stop' : isSpeaking ? '🔊 Replay' : '▶ Replay'}
-                    </button>
-                    {msg.audio?.speaker_name && (
-                      <span className="cloned-voice-bubble-badge" title="Synthesized with open-source Coqui XTTS-v2 voice model">
-                        🎙️ {msg.audio.speaker_name}&apos;s Cloned Voice
-                      </span>
-                    )}
-                    <div className={`bubble-reaction-note reaction-level-${msg.distress?.level || 'none'}`}>
-                      <span>{formatReactionNote(msg.distress)}</span>
-                      {msg.distress?.matched_keywords?.length > 0 && (
-                        <span className="reaction-trigger-tag">
-                          Triggers: {msg.distress.matched_keywords.join(', ')}
-                        </span>
-                      )}
+              ))}
+
+              {isLoading && (
+                <div className="timeline-bubble-wrap bubble-wrap-companion">
+                  <div className="timeline-bubble loading-bubble-dark">
+                    <div className="typing-indicator" aria-label="Kural is thinking">
+                      <span></span><span></span><span></span>
                     </div>
                   </div>
-                )}
-              </div>
-            </div>
-          ))}
+                </div>
+              )}
 
-          {isLoading && (
-            <div className="timeline-bubble-wrap bubble-wrap-companion">
-              <div className="timeline-bubble loading-bubble-dark">
-                <div className="typing-indicator" aria-label="Kural is thinking">
-                  <span></span><span></span><span></span>
+              <div ref={messagesEndRef} />
+            </div>
+          </section>
+
+          {/* Live Cloned Speech Waveform Player Banner */}
+          {isSpeaking && (
+            <div className="live-speech-dock-banner">
+              <div className="live-speech-content">
+                <div className="speech-wave-anim" aria-label="Live audio frequency waveform">
+                  <span className="wave-bar bar-1"></span>
+                  <span className="wave-bar bar-2"></span>
+                  <span className="wave-bar bar-3"></span>
+                  <span className="wave-bar bar-4"></span>
+                  <span className="wave-bar bar-5"></span>
+                  <span className="wave-bar bar-6"></span>
+                  <span className="wave-bar bar-7"></span>
+                  <span className="wave-bar bar-8"></span>
+                  <span className="wave-bar bar-9"></span>
+                  <span className="wave-bar bar-10"></span>
+                </div>
+                <div className="live-speech-meta">
+                  <span className="live-speech-speaker">
+                    {isClonedAudio ? `🎙️ Speaking in ${currentSpeaker}'s Cloned Voice` : '🎙️ Speaking Companion Reply'}
+                  </span>
+                  <span className="live-speech-engine">
+                    <span className="engine-pulse-dot" />
+                    {isClonedAudio ? 'Coqui XTTS-v2 Active • LinuxONE Microservice' : 'Gentle Maternal Cadence'}
+                  </span>
                 </div>
               </div>
+              <button
+                type="button"
+                className="btn-live-speech-stop"
+                onClick={stopSpeaking}
+                title="Stop audio playback"
+              >
+                ⏹ Stop
+              </button>
             </div>
           )}
 
-          <div ref={messagesEndRef} />
-        </div>
-      </section>
-
-      {/* Live Cloned Speech Indicator & Player Banner with 10-Bar Waveform */}
-      {isSpeaking && (
-        <div className="live-speech-dock-banner">
-          <div className="live-speech-content">
-            <div className="speech-wave-anim" aria-label="Live audio frequency waveform">
-              <span className="wave-bar bar-1"></span>
-              <span className="wave-bar bar-2"></span>
-              <span className="wave-bar bar-3"></span>
-              <span className="wave-bar bar-4"></span>
-              <span className="wave-bar bar-5"></span>
-              <span className="wave-bar bar-6"></span>
-              <span className="wave-bar bar-7"></span>
-              <span className="wave-bar bar-8"></span>
-              <span className="wave-bar bar-9"></span>
-              <span className="wave-bar bar-10"></span>
-            </div>
-            <div className="live-speech-meta">
-              <span className="live-speech-speaker">
-                {isClonedAudio ? `🎙️ Speaking in ${currentSpeaker}'s Cloned Voice` : '🎙️ Speaking Companion Reply'}
-              </span>
-              <span className="live-speech-engine">
-                <span className="engine-pulse-dot" />
-                {isClonedAudio ? 'Coqui XTTS-v2 Active • LinuxONE Microservice' : 'Gentle Maternal Cadence'}
-              </span>
+          {/* Quick Comfort Anchor Topic Chips */}
+          <div className="comfort-chips-strip">
+            <span className="comfort-chips-label">
+              {langMode === 'ta' ? 'அமைதி தரும் நினைவுகள்:' : 'Comfort Anchors:'}
+            </span>
+            <div className="comfort-chips-scroll">
+              {(COMFORT_CHIPS[activePatientId] || COMFORT_CHIPS.patient_kalyani).map((chip, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  className="comfort-chip-btn"
+                  onClick={() => handleSend(chip.prompt)}
+                  disabled={isLoading}
+                >
+                  {chip.label}
+                </button>
+              ))}
             </div>
           </div>
-          <button
-            type="button"
-            className="btn-live-speech-stop"
-            onClick={stopSpeaking}
-            title="Stop audio playback"
-          >
-            ⏹ Stop
-          </button>
+
+          {/* Sticky Docked Chat Input (Never scrolls away) */}
+          <footer className="stitch-chat-dock">
+            <form
+              className="dock-input-form"
+              onSubmit={(e) => {
+                e.preventDefault()
+                handleSend()
+              }}
+            >
+              <button
+                type="button"
+                className={`dock-mic-btn ${isListening ? 'mic-listening' : ''}`}
+                onClick={toggleVoiceInput}
+                title={isListening ? 'Listening... tap to stop' : 'Tap to speak to Kural'}
+                aria-label="Voice input"
+              >
+                {isListening ? '🔴' : '🎙️'}
+              </button>
+
+              <textarea
+                ref={textareaRef}
+                className="dock-textarea"
+                placeholder={
+                  isListening
+                    ? (langMode === 'ta' ? 'உங்கள் குரலைக் கேட்கிறது...' : 'Listening to your voice...')
+                    : (langMode === 'ta' ? `${preferredName}-உடன் தமிழில் பேசுங்கள்...` : `Type or speak to ${preferredName}...`)
+                }
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyDown={handleKeyDown}
+                rows={1}
+                disabled={isLoading}
+              />
+
+              <button
+                type="submit"
+                className="dock-send-btn"
+                disabled={!inputText.trim() || isLoading}
+                aria-label="Send"
+              >
+                {isLoading ? '...' : (langMode === 'ta' ? 'அனுப்பு' : 'Send')}
+              </button>
+            </form>
+          </footer>
         </div>
       )}
 
-      {/* Floating Input Dock with Voice Input Button */}
-      <footer className="stitch-chat-dock">
-        <form
-          className="dock-input-form"
-          onSubmit={(e) => {
-            e.preventDefault()
-            handleSend()
-          }}
-        >
-          <button
-            type="button"
-            className={`dock-mic-btn ${isListening ? 'mic-listening' : ''}`}
-            onClick={toggleVoiceInput}
-            title={isListening ? 'Listening... tap to stop' : 'Tap to speak to Kural'}
-            aria-label="Voice input"
-          >
-            {isListening ? '🔴' : '🎙️'}
-          </button>
+      {/* =========================================================================
+          VIEW MODE 2: OVERVIEW (Memories, Anchors, Hero Photo, Guidance)
+          ========================================================================= */}
+      {activeViewMode === 'overview' && (
+        <div className="overview-focused-container">
+          {/* Familiar Caregiver Voice Greeting Player Banner */}
+          <div className="family-voice-banner">
+            <div className="family-voice-left">
+              <div className="family-voice-icon-circle">
+                <span className="family-voice-icon">🎙️</span>
+              </div>
+              <div>
+                <span className="family-voice-eyebrow">
+                  {langMode === 'ta' ? 'அன்பான குடும்பக் குரல்' : 'FAMILIAR FAMILY VOICE'}
+                </span>
+                <span className="family-voice-title">
+                  {caregiverName}&apos;s {langMode === 'ta' ? 'அன்பு வாழ்த்து' : 'Personal Greeting'}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              className={`btn-play-family-greeting ${isPlayingFamilyVoice ? 'greeting-playing' : ''}`}
+              onClick={handlePlayFamilyGreeting}
+            >
+              {isPlayingFamilyVoice ? (
+                <span className="playing-waveform">❙❙❙ {langMode === 'ta' ? 'ஒலிக்கிறது...' : 'Playing...'}</span>
+              ) : (
+                <span>▶ {langMode === 'ta' ? 'வாழ்த்தைக் கேள்' : 'Play Greeting'}</span>
+              )}
+            </button>
+          </div>
 
-          <textarea
-            ref={textareaRef}
-            className="dock-textarea"
-            placeholder={
-              isListening
-                ? (langMode === 'ta' ? 'உங்கள் குரலைக் கேட்கிறது...' : 'Listening to your voice...')
-                : (langMode === 'ta' ? `${preferredName}-உடன் தமிழில் பேசுங்கள்...` : `Type or speak to ${preferredName}...`)
-            }
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={handleKeyDown}
-            rows={1}
-            disabled={isLoading}
-          />
+          {/* Main Section Banner */}
+          <section className="companion-hero-callout">
+            <h1 className="companion-hero-title">Stay close, even from afar.</h1>
+            <p className="companion-hero-sub">
+              Small messages can become familiar, reassuring moments in their day.
+            </p>
 
-          <button
-            type="submit"
-            className="dock-send-btn"
-            disabled={!inputText.trim() || isLoading}
-            aria-label="Send"
-          >
-            {isLoading ? '...' : (langMode === 'ta' ? 'அனுப்பு' : 'Send')}
-          </button>
-        </form>
-      </footer>
+            {/* Dynamic Portrait Hero Card */}
+            <div className="hero-portrait-card">
+              <img
+                src={activePatientId === 'patient_kalyani' ? '/hero_family.jpg' : '/hero_nell.jpg'}
+                alt={activePatientId === 'patient_kalyani' ? 'Kalyani Amma and family' : 'Nell Vance and daughter'}
+                className="hero-portrait-image"
+              />
+              <div className="portrait-overlay-strip">
+                <div className="overlay-person-badge">
+                  <img
+                    src={activePatientId === 'patient_kalyani' ? '/avatar_amma.jpg' : '/avatar_nell.jpg'}
+                    alt={preferredName}
+                    className="overlay-mini-avatar-img"
+                  />
+                  <div>
+                    <div className="overlay-name-row">
+                      <span className="overlay-name">{preferredName}</span>
+                      <span className="connected-chip">• Connected</span>
+                    </div>
+                    <div className="overlay-stage">{stageDisplay}</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="refresh-circle-btn"
+                  onClick={handleResetConversation}
+                  title="Reset conversation"
+                >
+                  🔄
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* Kural Suggestion Compass Card (Dynamic) */}
+          <section className="kural-suggestion-card">
+            <div className="suggestion-top-row">
+              <span className="suggestion-badge">✪ KURAL&apos;S SUGGESTION</span>
+              <span className="compass-pill">{stageDisplay}</span>
+            </div>
+            <h2 className="suggestion-heading">A little guidance for today</h2>
+            <p className="suggestion-body">
+              {patientData?.preferences?.likes?.length > 0
+                ? `“A calm voice and familiar topics can make conversations feel easier. Mention ${patientData.preferences.likes.slice(0, 2).join(' or ')}, family memories, or afternoon rituals.”`
+                : `“A calm voice and familiar topics can make conversations feel easier. Mention today's weather, family names, or simple afternoon tea rituals.”`}
+            </p>
+            <div className="suggestion-footer-row">
+              <span className="suggestion-recap-text">Tuned for {preferredName}</span>
+              <button
+                type="button"
+                className="apply-prompt-btn"
+                onClick={() =>
+                  handleSend(
+                    patientData?.preferences?.likes?.[0]
+                      ? `Tell me about ${patientData.preferences.likes[0]}. It always brings such comfort and peace to think about.`
+                      : "Tell me about a peaceful morning, sipping warm tea and listening to quiet sounds."
+                  )
+                }
+              >
+                Apply prompt ↗
+              </button>
+            </div>
+          </section>
+
+          {/* Emotional Anchors Grid (Dynamic based on selected profile) */}
+          <section className="emotional-anchors-section">
+            <div className="anchors-header-block">
+              <span className="anchors-eyebrow">EMOTIONAL ANCHORS</span>
+              <h2 className="anchors-title">Little things {preferredName} knows by heart.</h2>
+              <p className="anchors-sub">
+                Familiar anchors from {preferredName}&apos;s profile that comfort them. Tap any card to attach to conversation.
+              </p>
+            </div>
+
+            <div className="anchors-grid">
+              {dynamicAnchors.map((anchor, index) => (
+                <div
+                  key={index}
+                  className="anchor-card"
+                  onClick={() => handleSend(anchor.prompt)}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className="anchor-card-top icon-top">
+                    <span className="anchor-icon-symbol">{anchor.icon}</span>
+                    <div className="anchor-symbol-title">{anchor.title}</div>
+                    <div className="anchor-symbol-sub">{anchor.subtitle}</div>
+                  </div>
+                  <div className="anchor-pill-tag">{anchor.tag}</div>
+                  <p className="anchor-snippet">{anchor.snippet}</p>
+                  <div className="anchor-footer">
+                    <span className="anchor-category">{anchor.category}</span>
+                    <span className="anchor-arrow">↑</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* In this page, let typing be there here also */}
+          <div className="overview-typing-dock">
+            <div className="overview-dock-title">
+              <span>💬 {langMode === 'ta' ? 'உரையாடலைத் தொடங்குங்கள்' : `Start a message with ${preferredName}`}</span>
+              <span className="overview-dock-hint">{langMode === 'ta' ? 'தட்டச்சு அல்லது குரல்' : 'Type or Speak'}</span>
+            </div>
+            <form
+              className="dock-input-form"
+              onSubmit={(e) => {
+                e.preventDefault()
+                handleSend()
+              }}
+            >
+              <button
+                type="button"
+                className={`dock-mic-btn ${isListening ? 'mic-listening' : ''}`}
+                onClick={toggleVoiceInput}
+                title={isListening ? 'Listening... tap to stop' : 'Tap to speak'}
+              >
+                {isListening ? '🔴' : '🎙️'}
+              </button>
+              <input
+                type="text"
+                className="dock-textarea overview-input-field"
+                placeholder={
+                  isListening
+                    ? (langMode === 'ta' ? 'கேட்கிறது...' : 'Listening...')
+                    : (langMode === 'ta' ? `${preferredName}-இடம் பேச விரும்பும் செய்தியை தட்டச்சு செய்யுங்கள்...` : `Type a comforting message for ${preferredName}...`)
+                }
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                disabled={isLoading}
+              />
+              <button
+                type="submit"
+                className="dock-send-btn"
+                disabled={!inputText.trim() || isLoading}
+              >
+                {isLoading ? '...' : (langMode === 'ta' ? 'அனுப்பு' : 'Send')} ↑
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Safe Zone Details Sheet / Modal */}
       {showSafeZoneModal && (

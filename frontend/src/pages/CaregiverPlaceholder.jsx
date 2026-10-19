@@ -23,7 +23,7 @@ const DEFAULT_OBSERVATION_LOGS = [
 ]
 
 function getStorageKey(patientId) {
-  return `kural_caregiver_notes_${patientId || 'patient_001'}`
+  return `kural_caregiver_notes_${patientId || 'patient_kalyani'}`
 }
 
 function loadNotesForPatient(patientId) {
@@ -53,7 +53,7 @@ function saveNotesForPatient(patientId, notes) {
 
 function computeTranquilityStats(patientId) {
   try {
-    const key = `kural_session_distress_${patientId || 'patient_001'}`
+    const key = `kural_session_distress_${patientId || 'patient_kalyani'}`
     const raw = localStorage.getItem(key)
     if (!raw) {
       return {
@@ -170,7 +170,7 @@ export default function CaregiverPortal() {
   const [isRecording, setIsRecording] = useState(false)
   const [recordingSeconds, setRecordingSeconds] = useState(0)
   const [recordedAudioUrl, setRecordedAudioUrl] = useState(() => {
-    const id = localStorage.getItem('kural_active_patient_id') || 'patient_001'
+    const id = localStorage.getItem('kural_active_patient_id') || 'patient_kalyani'
     return localStorage.getItem(`kural_greeting_audio_${id}`) || null
   })
   const [isPlayingGreeting, setIsPlayingGreeting] = useState(false)
@@ -195,7 +195,7 @@ export default function CaregiverPortal() {
   const [newNote, setNewNote] = useState('')
   const [copiedToast, setCopiedToast] = useState(false)
   const [logs, setLogs] = useState(() => {
-    const id = localStorage.getItem('kural_active_patient_id') || 'patient_001'
+    const id = localStorage.getItem('kural_active_patient_id') || 'patient_kalyani'
     return loadNotesForPatient(id)
   })
 
@@ -205,7 +205,10 @@ export default function CaregiverPortal() {
         if (patients && patients.length > 0) {
           setPatientsList(patients)
           const storedId = localStorage.getItem('kural_active_patient_id')
-          const matched = patients.find((p) => p.patient_id === storedId) || patients[0]
+          const matched =
+            patients.find((p) => p.patient_id === storedId) ||
+            patients.find((p) => p.patient_id === 'patient_kalyani') ||
+            patients[0]
           setActivePatient(matched)
         }
       })
@@ -219,7 +222,7 @@ export default function CaregiverPortal() {
     }
   }, [activePatient?.patient_id])
 
-  const activePatientId = activePatient?.patient_id || localStorage.getItem('kural_active_patient_id') || 'patient_001'
+  const activePatientId = activePatient?.patient_id || localStorage.getItem('kural_active_patient_id') || 'patient_kalyani'
   const tranquilityStats = computeTranquilityStats(activePatientId)
 
   const handleSaveCaregiverEmail = (e) => {
@@ -244,7 +247,7 @@ export default function CaregiverPortal() {
     }
     const updated = [noteItem, ...logs]
     setLogs(updated)
-    const patientId = activePatient?.patient_id || localStorage.getItem('kural_active_patient_id') || 'patient_001'
+    const patientId = activePatient?.patient_id || localStorage.getItem('kural_active_patient_id') || 'patient_kalyani'
     saveNotesForPatient(patientId, updated)
     setNewNote('')
   }
@@ -252,7 +255,7 @@ export default function CaregiverPortal() {
   const handleDeleteNote = (noteId) => {
     const updated = logs.filter((log) => log.id !== noteId)
     setLogs(updated)
-    const patientId = activePatient?.patient_id || localStorage.getItem('kural_active_patient_id') || 'patient_001'
+    const patientId = activePatient?.patient_id || localStorage.getItem('kural_active_patient_id') || 'patient_kalyani'
     saveNotesForPatient(patientId, updated)
   }
 
@@ -335,7 +338,7 @@ Generated with love by Kural Dementia Companion Care.
         const reader = new FileReader()
         reader.onloadend = () => {
           const base64data = reader.result
-          const id = activePatient?.patient_id || 'patient_001'
+          const id = activePatient?.patient_id || 'patient_kalyani'
           localStorage.setItem(`kural_greeting_audio_${id}`, base64data)
           setRecordedAudioUrl(base64data)
         }
@@ -400,7 +403,7 @@ Generated with love by Kural Dementia Companion Care.
   }
 
   const handleDeleteGreeting = () => {
-    const id = activePatient?.patient_id || 'patient_001'
+    const id = activePatient?.patient_id || 'patient_kalyani'
     localStorage.removeItem(`kural_greeting_audio_${id}`)
     setRecordedAudioUrl(null)
   }
@@ -437,7 +440,7 @@ Generated with love by Kural Dementia Companion Care.
     const reader = new FileReader()
     reader.onloadend = () => {
       const base64data = reader.result
-      const id = activePatient?.patient_id || 'patient_001'
+      const id = activePatient?.patient_id || 'patient_kalyani'
       localStorage.setItem(`kural_greeting_audio_${id}`, base64data)
       setRecordedAudioUrl(base64data)
       setCloneSuccessToast(`Loaded voice sample "${file.name}". Ready to train with Coqui XTTS-v2!`)

@@ -24,6 +24,8 @@ def list_patients() -> list[Patient]:
             p = get_patient(pid)
             if p:
                 patients.append(p)
+    # Ensure Kalyani Amma is first by default
+    patients.sort(key=lambda p: 0 if p.patient_id == "patient_kalyani" else 1)
     return patients
 
 def save_patient(patient: Patient) -> None:

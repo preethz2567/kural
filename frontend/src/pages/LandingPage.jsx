@@ -13,7 +13,10 @@ export default function LandingPage() {
       .then((patients) => {
         if (patients && patients.length > 0) {
           const storedId = localStorage.getItem('kural_active_patient_id')
-          const matched = patients.find((p) => p.patient_id === storedId) || patients[0]
+          const matched =
+            patients.find((p) => p.patient_id === storedId) ||
+            patients.find((p) => p.patient_id === 'patient_kalyani') ||
+            patients[0]
           setActivePatient(matched)
         }
       })
