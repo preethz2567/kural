@@ -47,32 +47,32 @@ export default function MobileDeviceFrame({ children }) {
         <aside className="web-showcase-sidebar sidebar-left" aria-hidden="true">
           <div className="showcase-card">
             <div className="showcase-card-header">
-              <span className="showcase-tag-pill">✦ KURAL VOICE AI</span>
+              <span className="showcase-tag-pill">✦ AI FOR GOOD • KURAL</span>
             </div>
-            <h2 className="showcase-title">Empathetic Voice Companion</h2>
+            <h2 className="showcase-title">A Familiar Voice in the Fog</h2>
             <p className="showcase-desc">
-              Clinical soothing cadences, familiar emotional anchors, and multilingual reassurance designed for Alzheimer’s &amp; dementia care.
+              Synthesizing family voices to bring warmth, dignity, and gentle reassurance to elders navigating Alzheimer’s and dementia.
             </p>
             <div className="showcase-feature-list">
               <div className="showcase-feature-item">
                 <span className="feature-icon">🎙️</span>
                 <div>
-                  <strong>Hands-Free Speech</strong>
-                  <span>Continuous Web Speech STT &amp; vocal reassurance</span>
+                  <strong>Cloned Family Voice</strong>
+                  <span>Restoring loved ones&apos; voices to soothe late-day fear</span>
                 </div>
               </div>
               <div className="showcase-feature-item">
-                <span className="feature-icon">📍</span>
+                <span className="feature-icon">🌿</span>
                 <div>
-                  <strong>Safe Zone Geofence</strong>
-                  <span>Continuous boundary safety &amp; caregiver check-in</span>
+                  <strong>Sundowning Compassion</strong>
+                  <span>Early agitation sensing that grounds hearts with quiet peace</span>
                 </div>
               </div>
               <div className="showcase-feature-item">
-                <span className="feature-icon">🌐</span>
+                <span className="feature-icon">🌸</span>
                 <div>
-                  <strong>Bilingual Cadence</strong>
-                  <span>Native Tamil &amp; English cultural voice modes</span>
+                  <strong>Cherished Memory Anchors</strong>
+                  <span>Native Tamil and English memories that time cannot erase</span>
                 </div>
               </div>
             </div>
@@ -159,32 +159,32 @@ export default function MobileDeviceFrame({ children }) {
         <aside className="web-showcase-sidebar sidebar-right" aria-hidden="true">
           <div className="showcase-card">
             <div className="showcase-card-header">
-              <span className="showcase-tag-pill tag-purple">♥ CAREGIVER WORKSPACE</span>
+              <span className="showcase-tag-pill tag-purple">♥ HUMAN DIGNITY &amp; CARE</span>
             </div>
-            <h2 className="showcase-title">Clinical Serenity &amp; Sync</h2>
+            <h2 className="showcase-title">Peace of Mind Across Distance</h2>
             <p className="showcase-desc">
-              Continuous emotional monitoring backed by GoEmotions ML classification and doctor-ready clinical reports.
+              Closing the distance between families and elders through continuous emotional empathy and doctor-ready clinical tranquility.
             </p>
             <div className="showcase-feature-list">
               <div className="showcase-feature-item">
                 <span className="feature-icon">🌿</span>
                 <div>
                   <strong>Daily Tranquility Index</strong>
-                  <span>Baseline peace scoring with sundowning tracking</span>
+                  <span>Measuring peace rhythms to nurture calm through twilight hours</span>
                 </div>
               </div>
               <div className="showcase-feature-item">
-                <span className="feature-icon">📝</span>
+                <span className="feature-icon">📍</span>
                 <div>
-                  <strong>Observation Reaction Logs</strong>
-                  <span>Real-time caregiver notes &amp; mood reaction capture</span>
+                  <strong>Safe Haven Reassurance</strong>
+                  <span>Gentle perimeter boundaries that protect without causing alarm</span>
                 </div>
               </div>
               <div className="showcase-feature-item">
                 <span className="feature-icon">📋</span>
                 <div>
                   <strong>Doctor Clinical Export</strong>
-                  <span>One-click clipboard export for geriatricians &amp; family</span>
+                  <span>Transforming daily care moments into clinical clarity for physicians</span>
                 </div>
               </div>
             </div>
