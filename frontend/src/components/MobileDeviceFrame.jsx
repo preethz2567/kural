@@ -87,12 +87,11 @@ export default function MobileDeviceFrame({ children }) {
           <header className="web-preview-header-bar">
             <div className="web-preview-pill">
               <span className="preview-pulse-dot"></span>
-              <span className="preview-brand-tag">Kural - Your Companion</span>
+              <span className="preview-brand-tag">Kural</span>
               <span className="preview-divider">•</span>
-              <span className="preview-label">Alzheimer’s &amp; Dementia Memory Care</span>
+              <span className="preview-label">Your Companion</span>
               <span className="preview-divider">•</span>
-              <span className="preview-sub">Interactive Mobile View</span>
-              <span className="preview-hint-tag">↕ Scroll inside phone</span>
+              <span className="preview-sub">Interactive View</span>
             </div>
           </header>
 
