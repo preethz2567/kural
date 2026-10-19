@@ -65,31 +65,50 @@ def get_active_client():
 class ChatRequest(BaseModel):
     session_id: str
     message: str
+    language: Optional[str] = "en"
 
 class ChatResponse(BaseModel):
     response: str
     distress: Optional[Dict[str, Any]] = None
     audio: Optional[Dict[str, Any]] = None
 
-def generate_mock_response(preferred_name: str, distress_level: str) -> str:
+def generate_mock_response(preferred_name: str, distress_level: str, language: str = "en") -> str:
     """
     Generate a warm, gentle, stage-appropriate companion response when AI client is in prototype fallback.
     """
-    if distress_level == "high":
-        return (
-            f"[Mock Companion] I am right here with you, {preferred_name}. "
-            "You are safe, and everything is calm. Let's take a slow, gentle breath together."
-        )
-    elif distress_level in ("medium", "low"):
-        return (
-            f"[Mock Companion] I hear you, {preferred_name}, and I'm listening. "
-            "It is completely okay to feel this way. Would you like to tell me what's on your mind?"
-        )
+    lang = (language or "en").lower().strip()
+    if lang == "ta":
+        if distress_level == "high":
+            return (
+                f"[Mock Companion] நான் உங்களுடன்தான் இருக்கிறேன், {preferred_name}. "
+                "நீங்கள் பாதுகாப்பாக இருக்கிறீர்கள், எல்லாம் அமைதியாக உள்ளது. மெதுவாக ஒரு முறை மூச்சு விடுங்கள்."
+            )
+        elif distress_level in ("medium", "low"):
+            return (
+                f"[Mock Companion] நான் உங்களைக் கவனமாகக் கேட்கிறேன், {preferred_name}. "
+                "உங்கள் மனதில் உள்ளதை என்னிடம் சொல்லுங்கள்."
+            )
+        else:
+            return (
+                f"[Mock Companion] வணக்கம் {preferred_name}, உங்களோடு பேசுவதில் மிக்க மகிழ்ச்சி. "
+                "இன்று நீங்கள் எப்படி உணர்கிறீர்கள்?"
+            )
     else:
-        return (
-            f"[Mock Companion] Hello {preferred_name}, it is lovely to talk with you. "
-            "I am right here keeping you company. How are you feeling today?"
-        )
+        if distress_level == "high":
+            return (
+                f"[Mock Companion] I am right here with you, {preferred_name}. "
+                "You are safe, and everything is calm. Let's take a slow, gentle breath together."
+            )
+        elif distress_level in ("medium", "low"):
+            return (
+                f"[Mock Companion] I hear you, {preferred_name}, and I'm listening. "
+                "It is completely okay to feel this way. Would you like to tell me what's on your mind?"
+            )
+        else:
+            return (
+                f"[Mock Companion] Hello {preferred_name}, it is lovely to talk with you. "
+                "I am right here keeping you company. How are you feeling today?"
+            )
 
 @router.post("/{patient_id}", response_model=ChatResponse)
 async def chat_with_patient(patient_id: str, request: ChatRequest):
@@ -99,6 +118,7 @@ async def chat_with_patient(patient_id: str, request: ChatRequest):
         
     system_prompt = build_system_prompt(patient)
     preferred_name = patient.preferred_name or patient.name
+    req_lang = (request.language or "en").lower().strip()
 
     # 1. Append user message to history first so repetition counts reflect this turn
     session_store.append_turn(request.session_id, "user", request.message)
@@ -115,12 +135,18 @@ async def chat_with_patient(patient_id: str, request: ChatRequest):
     # 3. If no live Anthropic client, return clearly labeled mock companion response
     active_client = get_active_client()
     if not active_client:
-        bot_reply = generate_mock_response(preferred_name, distress_result.get("level", "none"))
+        bot_reply = generate_mock_response(preferred_name, distress_result.get("level", "none"), language=req_lang)
         session_store.append_turn(request.session_id, "assistant", bot_reply, distress=distress_result)
         audio_payload = await voice_service.synthesize_speech(patient_id, bot_reply)
         return ChatResponse(response=bot_reply, distress=distress_result, audio=audio_payload)
 
     # 4. Live AI Mode
+    # Explicit language instruction for Claude
+    if req_lang == "ta":
+        system_prompt += "\n\n[LANGUAGE INSTRUCTION]: Speak warmly in gentle, spoken conversational Tamil. Use simple Tamil phrases appropriate for memory care."
+    else:
+        system_prompt += "\n\n[LANGUAGE INSTRUCTION]: Speak warmly in gentle, simple, reassuring conversational English. Always respond in English. Do not reply in Tamil unless the patient explicitly asks in Tamil."
+
     # Shift tone dynamically if distress is high
     if distress_result["level"] == "high":
         system_prompt += "\n\n[URGENT INSTRUCTION]: The patient appears highly distressed right now. Prioritize calm, short, reassuring language over factual information. De-escalate and soothe."

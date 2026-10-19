@@ -64,12 +64,19 @@ function formatReactionNote(distress) {
   return 'Reaction: Calm & attentive'
 }
 
-function loadSavedMessages(patientId) {
+function loadSavedMessages(patientId, currentLang = 'en') {
   try {
     const raw = localStorage.getItem(`kural_chat_messages_${patientId || 'patient_kalyani'}`)
     if (raw) {
       const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // If currentLang is 'en' but saved messages are in Tamil, ignore stale messages so user gets clean English
+        const hasTamil = parsed.some((m) => /[\u0B80-\u0BFF]/.test(m.text || ''))
+        if (currentLang === 'en' && hasTamil) {
+          return null
+        }
+        return parsed
+      }
     }
   } catch (err) {
     console.warn('[Session] Failed to load messages:', err)
@@ -85,7 +92,24 @@ function saveSavedMessages(patientId, msgs) {
   }
 }
 
-const COMFORT_CHIPS = {
+const COMFORT_CHIPS_EN = {
+  patient_kalyani: [
+    { label: '🌸 Jasmine Garden', prompt: 'Amma, do you remember the morning fragrance of fresh jasmine flowers? The garden was always so serene.' },
+    { label: '☕ Filter Coffee', prompt: 'Amma, remember the comforting warmth of fresh morning filter coffee in the brass davarah?' },
+    { label: '📻 Morning Ragas', prompt: 'Amma, do you remember how peaceful the morning ragas sounded playing softly from the veranda?' },
+    { label: '🌿 Tulsi Garden', prompt: 'Amma, shall we talk about the quiet evening lamp and peaceful memories by the garden?' },
+    { label: '🛕 Mylapore Temple', prompt: 'Amma, remember the gentle evening breeze around the quiet temple corridors in Mylapore?' },
+  ],
+  patient_001: [
+    { label: '🌸 Camellia Blooms', prompt: 'Nell, do you remember the winter camellias blooming in the glass conservatory? They were so vibrant.' },
+    { label: '🍵 Afternoon Tea', prompt: 'Nell, let us sit and imagine having a warm cup of Earl Grey tea with shortbread biscuits.' },
+    { label: '📖 Herbarium Journal', prompt: 'Nell, tell me about your botanical sketches of pressed mountain ferns and wildflowers.' },
+    { label: '🐱 Barnaby the Cat', prompt: 'Nell, do you remember sweet Barnaby sleeping in the sunlit greenhouse beside the terra cotta pots?' },
+    { label: '🌿 Lavender Walk', prompt: 'Nell, remember the sweet calming scent of lavender along the garden pathway in early summer?' },
+  ],
+}
+
+const COMFORT_CHIPS_TA = {
   patient_kalyani: [
     { label: '🌸 மல்லிகைத் தோட்டம்', prompt: 'அம்மா, காலையில மல்லிகைப் பூ பறிச்ச வாசனை ஞாபகம் இருக்கா? தோட்டம் எவ்வளவு அமைதியா இருந்தது!' },
     { label: '☕ டிகிரி காபி', prompt: 'அம்மா, பித்தளை டம்ளரில் நுரை பொங்க மணக்க மணக்க டிகிரி காபி குடித்த ஞாபகம் இருக்கா?' },
@@ -94,11 +118,11 @@ const COMFORT_CHIPS = {
     { label: '🛕 மயிலாப்பூர் கபாலி', prompt: 'அம்மா, மயிலாப்பூர் கபாலீஸ்வரர் கோவில் குளக்கரை தென்றல் காற்று எவ்வளவு மன அமைதி தந்தது!' },
   ],
   patient_001: [
-    { label: '🌸 Camellia Blooms', prompt: 'Nell, do you remember the winter camellias blooming in the glass conservatory? They were so vibrant.' },
-    { label: '🍵 Afternoon Tea', prompt: 'Nell, let us sit and imagine having a warm cup of Earl Grey tea with shortbread biscuits.' },
-    { label: '📖 Herbarium Journal', prompt: 'Nell, tell me about your botanical sketches of pressed mountain ferns and wildflowers.' },
-    { label: '🐱 Barnaby the Cat', prompt: 'Nell, do you remember sweet Barnaby sleeping in the sunlit greenhouse beside the terra cotta pots?' },
-    { label: '🌿 Lavender Walk', prompt: 'Nell, remember the sweet calming scent of lavender along the garden pathway in early summer?' },
+    { label: '🌸 கேமல்லியா மலர்கள்', prompt: 'நெல், கண்ணாடி மாளிகையில் பூத்த மலர்களை நினைத்துப் பார்க்கலாமா?' },
+    { label: '🍵 மாலை தேநீர்', prompt: 'நெல், அமைதியாக அமர்ந்து ஒரு கப் தேநீர் அருந்துவது போல நினைத்துப் பார்ப்போமா?' },
+    { label: '📖 மூலிகை இதழ்', prompt: 'நெல், காட்டுப் பூக்களின் வரைபடங்களைப் பற்றிப் பேசுவோமா?' },
+    { label: '🐱 செல்லப் பூனை', prompt: 'நெல், வெயில் காயும் பசுமை இல்லத்தில் தூங்கும் பார்னபியை நினைவிருக்கிறதா?' },
+    { label: '🌿 லாவெண்டர் நடைபாதை', prompt: 'நெல், கோடைக்கால லாவெண்டர் வாசனையை நினைத்துப் பார்ப்போமா?' },
   ],
 }
 
@@ -114,8 +138,9 @@ export default function CompanionChat() {
 
   // Default to English everywhere as requested
   const [langMode, setLangMode] = useState(() => {
-    const stored = localStorage.getItem('kural_lang_mode')
-    return stored || 'en'
+    const session = sessionStorage.getItem('kural_lang_mode')
+    if (session) return session
+    return 'en'
   })
 
   // View mode: 'chat' (active focused conversation) or 'overview' (memories & anchors)
@@ -126,7 +151,7 @@ export default function CompanionChat() {
   const [sessionId, setSessionId] = useState(() => createSessionId(activePatientId))
   const [patientData, setPatientData] = useState(null)
   const [messages, setMessages] = useState(() => {
-    const saved = loadSavedMessages(activePatientId)
+    const saved = loadSavedMessages(activePatientId, 'en')
     return saved || []
   })
   const [inputText, setInputText] = useState('')
@@ -211,11 +236,12 @@ export default function CompanionChat() {
     setSessionId(createSessionId(newId))
     const nextLang = defaultLang || 'en'
     setLangMode(nextLang)
+    sessionStorage.setItem('kural_lang_mode', nextLang)
     localStorage.setItem('kural_lang_mode', nextLang)
     setShowPatientDropdown(false)
 
     // Load preserved conversation for switched patient
-    const saved = loadSavedMessages(newId)
+    const saved = loadSavedMessages(newId, nextLang)
     if (saved && saved.length > 0) {
       setMessages(saved)
     } else {
@@ -226,7 +252,22 @@ export default function CompanionChat() {
   const toggleLanguage = () => {
     const next = langMode === 'en' ? 'ta' : 'en'
     setLangMode(next)
+    sessionStorage.setItem('kural_lang_mode', next)
     localStorage.setItem('kural_lang_mode', next)
+
+    // If only the initial welcome message exists, update it to the toggled language immediately
+    setMessages((prev) => {
+      if (prev.length <= 1 && prev[0]?.id?.startsWith('welcome_')) {
+        const preferred = patientData?.preferred_name || patientData?.name || 'Friend'
+        const welcome = next === 'ta'
+          ? `வணக்கம், ${preferred}. உங்களோடு அமைதியாகப் பேசுவதில் மிக்க மகிழ்ச்சி. பொறுமையாகப் பேசுங்கள், நான் எப்போதும் உங்களுடன்தான் இருக்கிறேன்.`
+          : `Hello, ${preferred}. It is lovely to sit together today. Take your time, and tell me whatever is on your mind. I am right here with you.`
+        const updated = [{ ...prev[0], text: welcome }]
+        saveSavedMessages(activePatientId, updated)
+        return updated
+      }
+      return prev
+    })
   }
 
   useEffect(() => {
@@ -251,8 +292,8 @@ export default function CompanionChat() {
           ? `வணக்கம், ${preferred}. உங்களோடு அமைதியாகப் பேசுவதில் மிக்க மகிழ்ச்சி. பொறுமையாகப் பேசுங்கள், நான் எப்போதும் உங்களுடன்தான் இருக்கிறேன்.`
           : `Hello, ${preferred}. It is lovely to sit together today. Take your time, and tell me whatever is on your mind. I am right here with you.`
 
-        // Check if there is an existing preserved conversation
-        const saved = loadSavedMessages(activePatientId)
+        // Check if there is an existing preserved conversation matching current language
+        const saved = loadSavedMessages(activePatientId, langMode)
         if (saved && saved.length > 0) {
           setMessages(saved)
         } else {
@@ -269,7 +310,7 @@ export default function CompanionChat() {
           saveSavedMessages(activePatientId, initial)
         }
       } catch {
-        const saved = loadSavedMessages(activePatientId)
+        const saved = loadSavedMessages(activePatientId, langMode)
         if (saved && saved.length > 0) {
           setMessages(saved)
         } else {
@@ -332,6 +373,7 @@ export default function CompanionChat() {
       const data = await sendChatMessage(activePatientId, {
         session_id: sessionId,
         message: trimmed,
+        language: langMode,
       })
 
       const rawReply = data.response || 'No response returned.'
@@ -676,28 +718,25 @@ export default function CompanionChat() {
         <div className="chat-header-person">
           <button
             type="button"
-            className={`btn-auto-voice-toggle ${autoVoiceEnabled ? 'auto-voice-on' : 'auto-voice-off'}`}
+            className={`btn-header-voice ${autoVoiceEnabled ? 'voice-on' : 'voice-off'}`}
             onClick={toggleAutoVoice}
-            title={
-              autoVoiceEnabled
-                ? 'Auto-Voice ON: Voice speaks automatically. Tap to mute.'
-                : 'Auto-Voice MUTED: Tap to enable automatic speech.'
-            }
+            title={autoVoiceEnabled ? 'Auto-Voice ON (Tap to mute)' : 'Auto-Voice MUTED (Tap to enable)'}
             aria-label="Toggle auto voice playback"
           >
-            {autoVoiceEnabled ? '🔊 Auto' : '🔇 Mute'}
+            <span className="voice-btn-icon">{autoVoiceEnabled ? '🔊' : '🔇'}</span>
+            <span className="voice-btn-label">Auto</span>
           </button>
 
           <button
             type="button"
-            className={`btn-lang-toggle ${langMode === 'ta' ? 'lang-ta-active' : ''}`}
+            className={`btn-header-lang ${langMode === 'ta' ? 'lang-ta' : 'lang-en'}`}
             onClick={toggleLanguage}
             title="Switch language between English and தமிழ்"
           >
-            {langMode === 'ta' ? '🇮🇳 தமிழ்' : '🇬🇧 EN'}
+            {langMode === 'ta' ? 'தமிழ்' : 'English'}
           </button>
 
-          {/* Quick Patient Switcher Pill with Chevron */}
+          {/* Quick Patient Switcher Pill with Avatar */}
           <div
             className={`person-header-pill ${showPatientDropdown ? 'pill-open' : ''}`}
             onClick={() => setShowPatientDropdown((prev) => !prev)}
@@ -705,14 +744,6 @@ export default function CompanionChat() {
             tabIndex={0}
             title="Switch elder profile"
           >
-            <div className="person-header-info">
-              <span className="person-header-name">
-                {preferredName} <span className="chevron-pill">{showPatientDropdown ? '▴' : '▾'}</span>
-              </span>
-              <span className="person-header-status">
-                <span className="status-dot-green"></span> {langMode === 'ta' ? 'இணைப்பு' : 'Active'}
-              </span>
-            </div>
             <div className={`header-avatar-btn ${isSpeaking ? 'avatar-speaking-aura' : ''}`}>
               <img
                 src={activePatientId === 'patient_kalyani' ? '/avatar_amma.jpg' : '/avatar_nell.jpg'}
@@ -720,6 +751,8 @@ export default function CompanionChat() {
                 className="header-avatar-img"
               />
             </div>
+            <span className="person-header-name">{preferredName}</span>
+            <span className="chevron-pill">{showPatientDropdown ? '▴' : '▾'}</span>
           </div>
         </div>
 
@@ -1012,7 +1045,10 @@ export default function CompanionChat() {
               {langMode === 'ta' ? 'அமைதி தரும் நினைவுகள்:' : 'Comfort Anchors:'}
             </span>
             <div className="comfort-chips-scroll">
-              {(COMFORT_CHIPS[activePatientId] || COMFORT_CHIPS.patient_kalyani).map((chip, idx) => (
+              {(langMode === 'ta'
+                ? (COMFORT_CHIPS_TA[activePatientId] || COMFORT_CHIPS_TA.patient_kalyani)
+                : (COMFORT_CHIPS_EN[activePatientId] || COMFORT_CHIPS_EN.patient_kalyani)
+              ).map((chip, idx) => (
                 <button
                   key={idx}
                   type="button"

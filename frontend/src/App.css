@@ -1087,8 +1087,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
+  margin-bottom: 14px;
+  padding: 0 4px 12px 2px;
   border-bottom: 1px solid var(--border-subtle);
   position: relative;
   gap: 8px;
@@ -1126,9 +1126,15 @@
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: 9999px;
-  padding: 4px 9px;
-  height: 32px;
+  padding: 3px 9px;
+  height: 30px;
   box-sizing: border-box;
+}
+
+.brand-tamil {
+  font-size: 11px;
+  font-weight: 600;
+  color: #e5e0ea;
 }
 
 .brand-kural {
@@ -1141,28 +1147,103 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
-.person-header-info {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
-  line-height: 1.15;
-}
-
-.person-header-pill {
+/* 1. Header Voice Toggle */
+.btn-header-voice {
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  cursor: pointer;
-  height: 32px;
-  padding: 2px 4px 2px 10px;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+  white-space: nowrap;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.btn-header-voice.voice-on {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34d399;
+}
+
+.btn-header-voice.voice-on:hover {
+  background: rgba(16, 185, 129, 0.22);
+}
+
+.btn-header-voice.voice-off {
+  background: rgba(244, 63, 94, 0.1);
+  border: 1px solid rgba(244, 63, 94, 0.25);
+  color: #fb7185;
+}
+
+.btn-header-voice.voice-off:hover {
+  background: rgba(244, 63, 94, 0.2);
+}
+
+.voice-btn-icon {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.voice-btn-label {
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+/* 2. Header Language Toggle */
+.btn-header-lang {
+  height: 30px;
+  padding: 0 10px;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  color: #e5e0ea;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  font-family: inherit;
+}
+
+.btn-header-lang:hover {
+  background: var(--kural-pink-soft);
+  color: var(--kural-pink);
+  border-color: var(--border-interactive);
+}
+
+.btn-header-lang.lang-ta {
+  border-color: var(--kural-pink);
+  background: rgba(242, 166, 191, 0.15);
+  color: var(--kural-pink);
+}
+
+/* 3. Header Person Switcher Pill */
+.person-header-pill {
+  height: 30px;
+  padding: 0 8px 0 4px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
   box-sizing: border-box;
@@ -1171,18 +1252,15 @@
 
 .person-header-pill:hover,
 .person-header-pill.pill-open {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
   border-color: rgba(242, 166, 191, 0.4);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .person-header-name {
   font-size: 11.5px;
   font-weight: 700;
   color: #ffffff;
-  display: flex;
-  align-items: center;
-  gap: 3px;
   white-space: nowrap;
 }
 
@@ -1190,24 +1268,6 @@
   font-size: 8px;
   color: var(--kural-pink);
   transition: transform 0.2s ease;
-}
-
-.person-header-status {
-  font-size: 8.5px;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  white-space: nowrap;
-}
-
-.status-dot-green {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #10b981;
-  display: inline-block;
-  box-shadow: 0 0 6px #10b981;
 }
 
 .header-avatar-btn {
@@ -1243,18 +1303,18 @@
 }
 
 .header-avatar-img {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   object-fit: cover;
   object-position: center 20%;
-  border: 1.5px solid var(--border-interactive);
+  border: 1px solid var(--border-interactive);
   display: block;
 }
 
 .header-avatar-initial {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: #3b2a33;
   color: #f2a6bf;
@@ -1262,8 +1322,8 @@
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 11px;
-  border: 1.5px solid var(--border-interactive);
+  font-size: 10px;
+  border: 1px solid var(--border-interactive);
 }
 
 /* ==========================================================================
