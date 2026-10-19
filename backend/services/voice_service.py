@@ -15,10 +15,16 @@ except ImportError:
 
 from store import voice_store
 
-# Environment configuration for LinuxONE / self-hosted open-source XTTS-v2 model
-VOICE_CLONING_SERVICE_URL = os.getenv("VOICE_CLONING_SERVICE_URL", "").rstrip("/")
-VOICE_CLONING_TIMEOUT_SEC = float(os.getenv("VOICE_CLONING_TIMEOUT_SEC", "2.5"))
-VOICE_CLONING_API_KEY = os.getenv("VOICE_CLONING_API_KEY", "")
+from dotenv import load_dotenv
+from pathlib import Path
+
+def get_voice_cloning_config():
+    backend_env = Path(__file__).resolve().parent.parent / ".env"
+    load_dotenv(backend_env, override=True)
+    url = os.getenv("VOICE_CLONING_SERVICE_URL", "").rstrip("/")
+    timeout = float(os.getenv("VOICE_CLONING_TIMEOUT_SEC", "20.0"))
+    api_key = os.getenv("VOICE_CLONING_API_KEY", "")
+    return url, timeout, api_key
 
 def clean_text_for_speech(text: str) -> str:
     """
@@ -112,7 +118,8 @@ async def clone_caregiver_voice(
     voice_id = f"voice_{patient_id}_{speaker_name.lower().replace(' ', '_')}"
     
     remote_success = False
-    if VOICE_CLONING_SERVICE_URL:
+    service_url, timeout_sec, service_api_key = get_voice_cloning_config()
+    if service_url:
         try:
             req_data = json.dumps({
                 "patient_id": patient_id,
@@ -123,21 +130,21 @@ async def clone_caregiver_voice(
             }).encode("utf-8")
             
             req = urllib.request.Request(
-                f"{VOICE_CLONING_SERVICE_URL}/v1/clone-voice",
+                f"{service_url}/v1/clone-voice",
                 data=req_data,
                 headers={"Content-Type": "application/json"}
             )
-            if VOICE_CLONING_API_KEY:
-                req.add_header("Authorization", f"Bearer {VOICE_CLONING_API_KEY}")
+            if service_api_key:
+                req.add_header("Authorization", f"Bearer {service_api_key}")
                 
-            with urllib.request.urlopen(req, timeout=VOICE_CLONING_TIMEOUT_SEC) as resp:
+            with urllib.request.urlopen(req, timeout=timeout_sec) as resp:
                 if resp.status == 200:
                     result = json.loads(resp.read().decode("utf-8"))
                     voice_id = result.get("voice_id", voice_id)
                     remote_success = True
-                    print(f"[Voice Service] Successfully cloned voice on LinuxONE XTTS-v2: {voice_id}")
+                    print(f"[Voice Service] Successfully cloned voice on remote XTTS-v2: {voice_id}")
         except Exception as e:
-            print(f"[Voice Service] LinuxONE XTTS-v2 unreachable ({e}). Using resilient local profile.")
+            print(f"[Voice Service] Remote XTTS-v2 unreachable ({e}). Using resilient local profile.")
 
     # Save to voice store
     profile = {
@@ -177,41 +184,68 @@ async def synthesize_speech(
     }
     
     lang = language or profile.get("language", "en-US")
+    service_url, timeout_sec, service_api_key = get_voice_cloning_config()
     speaker_name = profile.get("speaker_name", "Loved One")
+    sample = audio_sample or profile.get("audio_sample")
+    clean_text = clean_text_for_speech(text)
     
-    # 1. Attempt remote LinuxONE XTTS-v2 endpoint if configured
-    if VOICE_CLONING_SERVICE_URL:
+    # 1. Attempt remote GPU XTTS-v2 endpoint if configured
+    if service_url:
         try:
+            # Ensure speaker sample is enrolled on remote GPU worker if available
+            if sample and len(sample) > 50:
+                try:
+                    enroll_data = json.dumps({
+                        "patient_id": patient_id,
+                        "speaker_name": speaker_name,
+                        "audio_base64": sample,
+                        "language": "ta" if "ta" in lang.lower() else "en",
+                        "model": "xtts-v2",
+                    }).encode("utf-8")
+                    enroll_req = urllib.request.Request(
+                        f"{service_url}/v1/clone-voice",
+                        data=enroll_data,
+                        headers={"Content-Type": "application/json"}
+                    )
+                    if service_api_key:
+                        enroll_req.add_header("Authorization", f"Bearer {service_api_key}")
+                    with urllib.request.urlopen(enroll_req, timeout=10.0) as _:
+                        pass
+                except Exception as enroll_err:
+                    pass
+
             req_data = json.dumps({
                 "voice_id": profile.get("voice_id"),
-                "text": text,
+                "text": clean_text or text,
                 "language": "ta" if "ta" in lang.lower() else "en",
                 "speed": profile.get("speed", 0.92),
             }).encode("utf-8")
             
             req = urllib.request.Request(
-                f"{VOICE_CLONING_SERVICE_URL}/v1/synthesize-speech",
+                f"{service_url}/v1/synthesize-speech",
                 data=req_data,
                 headers={"Content-Type": "application/json"}
             )
-            if VOICE_CLONING_API_KEY:
-                req.add_header("Authorization", f"Bearer {VOICE_CLONING_API_KEY}")
+            if service_api_key:
+                req.add_header("Authorization", f"Bearer {service_api_key}")
                 
-            with urllib.request.urlopen(req, timeout=VOICE_CLONING_TIMEOUT_SEC) as resp:
+            with urllib.request.urlopen(req, timeout=timeout_sec) as resp:
                 if resp.status == 200:
                     data = json.loads(resp.read().decode("utf-8"))
-                    return {
-                        "audio_base64": data.get("audio_base64"),
-                        "audio_mime": data.get("content_type", "audio/wav"),
-                        "content_type": data.get("content_type", "audio/wav"),
-                        "voice_cloned": True,
-                        "speaker_name": speaker_name,
-                        "model": "xtts-v2-linuxone",
-                        "speed": profile.get("speed", 0.92),
-                        "pitch": profile.get("pitch", 1.04),
-                    }
+                    audio_b64 = data.get("audio_base64")
+                    if audio_b64:
+                        return {
+                            "audio_base64": audio_b64,
+                            "audio_mime": data.get("content_type", "audio/wav"),
+                            "content_type": data.get("content_type", "audio/wav"),
+                            "voice_cloned": True,
+                            "speaker_name": speaker_name,
+                            "model": "coqui-xtts-v2-gpu",
+                            "speed": profile.get("speed", 0.92),
+                            "pitch": profile.get("pitch", 1.04),
+                        }
         except Exception as e:
-            print(f"[Voice Service] LinuxONE synthesis failed or timed out: {e}. Falling back to neural synthesis.")
+            print(f"[Voice Service] Remote XTTS synthesis failed or timed out: {e}. Falling back to neural synthesis.")
 
     # 2. High-Fidelity Speech Synthesis: Speak the actual companion response text
     audio_base64 = await synthesize_neural_speech(text, profile, lang)
