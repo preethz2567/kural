@@ -13,8 +13,10 @@ export default function LandingPage() {
       .then((patients) => {
         if (patients && patients.length > 0) {
           const storedId = localStorage.getItem('kural_active_patient_id')
+          const isCustom = storedId && storedId !== 'patient_001' && storedId !== 'patient_kalyani'
+          const targetId = isCustom ? storedId : 'patient_kalyani'
           const matched =
-            patients.find((p) => p.patient_id === storedId) ||
+            patients.find((p) => p.patient_id === targetId) ||
             patients.find((p) => p.patient_id === 'patient_kalyani') ||
             patients[0]
           setActivePatient(matched)
@@ -23,8 +25,8 @@ export default function LandingPage() {
       .catch(() => {})
   }, [])
 
-  const preferredName = activePatient?.preferred_name || activePatient?.name || 'Loved One'
-  const caregiverName = activePatient?.relationships?.[0]?.name || 'Caregiver'
+  const preferredName = activePatient?.preferred_name || activePatient?.name || 'Amma'
+  const caregiverName = activePatient?.relationships?.[0]?.name || 'Meera'
 
   // Voice Preview simulation using Web Speech Synthesis
   const handlePlayVoicePreview = () => {
@@ -91,7 +93,7 @@ export default function LandingPage() {
         </div>
 
         <div className="landing-dementia-pill">
-          🧠 Alzheimer’s &amp; Dementia Memory Companion
+          Alzheimer’s &amp; Dementia Memory Care
         </div>
 
         <h1 className="landing-display-headline">
@@ -120,7 +122,7 @@ export default function LandingPage() {
         {/* Caregiver Portal & Setup Card */}
         <article className="landing-stitch-card caregiver-feature-card">
           <div className="card-top-tag">
-            <span>🧠 DEMENTIA CAREGIVER COMMAND</span>
+            <span>DEMENTIA CAREGIVER COMMAND</span>
           </div>
 
           <h2 className="card-headline">Dementia Telemetry &amp; Caregiver Sync</h2>
@@ -146,7 +148,7 @@ export default function LandingPage() {
 
           <h2 className="card-headline">Voice Reassurance for {preferredName}</h2>
           <p className="card-description">
-            Unhurried conversation using validation therapy in {caregiverName}&apos;s cloned voice — calming distress, memory loss confusion, and repetitive loops.
+            Unhurried conversation using validation therapy in {caregiverName}&apos;s cloned voice - calming distress, memory loss confusion, and repetitive loops.
           </p>
 
           <div className="card-actions-row">

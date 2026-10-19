@@ -11,7 +11,7 @@ export default defineConfig({
         enabled: true
       },
       manifest: {
-        name: 'Kural — Voice-First AI Companion',
+        name: 'Kural - Your Companion',
         short_name: 'Kural',
         description: 'A voice-first, stage-adaptive companion for older adults, providing a familiar and reassuring presence.',
         theme_color: '#faf5f0',

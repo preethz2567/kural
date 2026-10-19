@@ -205,8 +205,10 @@ export default function CaregiverPortal() {
         if (patients && patients.length > 0) {
           setPatientsList(patients)
           const storedId = localStorage.getItem('kural_active_patient_id')
+          const isCustom = storedId && storedId !== 'patient_001' && storedId !== 'patient_kalyani'
+          const targetId = isCustom ? storedId : 'patient_kalyani'
           const matched =
-            patients.find((p) => p.patient_id === storedId) ||
+            patients.find((p) => p.patient_id === targetId) ||
             patients.find((p) => p.patient_id === 'patient_kalyani') ||
             patients[0]
           setActivePatient(matched)
@@ -262,7 +264,7 @@ export default function CaregiverPortal() {
   const handleExportSummary = () => {
     const summary = `
 =============================================
-KURAL (குரல்) — DAILY TRANQUILITY & CARE SUMMARY
+KURAL (குரல்) - DAILY TRANQUILITY & CARE SUMMARY
 =============================================
 Loved One: ${preferredName} (${activePatient?.name || ''})
 Stage: ${stageDisplay}
@@ -770,7 +772,7 @@ Generated with love by Kural Dementia Companion Care.
               </span>
             </div>
             <p className="workspace-section-sub">
-              Train an open-source voice cloning model on {caregiverName}&apos;s voice. Every companion response for {preferredName} will speak automatically in this authentic loved one voice — no need to tap listen each time.
+              Train an open-source voice cloning model on {caregiverName}&apos;s voice. Every companion response for {preferredName} will speak automatically in this authentic loved one voice - no need to tap listen each time.
             </p>
 
             {/* Active Voice Model Status Bar */}

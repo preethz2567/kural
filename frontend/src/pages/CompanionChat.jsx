@@ -107,7 +107,9 @@ export default function CompanionChat() {
 
   // Default to Kalyani Amma (patient_kalyani)
   const [activePatientId, setActivePatientId] = useState(() => {
-    return localStorage.getItem('kural_active_patient_id') || 'patient_kalyani'
+    const stored = localStorage.getItem('kural_active_patient_id')
+    const isCustom = stored && stored !== 'patient_001' && stored !== 'patient_kalyani'
+    return isCustom ? stored : 'patient_kalyani'
   })
 
   // Default to Tamil for Kalyani, English for Nell
@@ -882,7 +884,7 @@ export default function CompanionChat() {
           <section className="archival-trail-section chat-trail-focused">
             {backendStatus === 'retrying' && (
               <div className="banner banner-warning">
-                Backend warming up — messages will send momentarily.
+                Backend warming up - messages will send momentarily.
               </div>
             )}
 

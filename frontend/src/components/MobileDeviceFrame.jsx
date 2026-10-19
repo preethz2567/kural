@@ -46,46 +46,37 @@ export default function MobileDeviceFrame({ children }) {
         {/* Left Side Feature Anchor Card (Visible on desktop screens) */}
         <aside className="web-showcase-sidebar sidebar-left" aria-hidden="true">
           <div className="showcase-card">
-            <div className="showcase-badge-banner dementia-badge">
-              <span className="badge-icon">🧠</span>
-              <div className="badge-text-group">
-                <span className="badge-kicker">CLINICAL MEMORY CARE</span>
-                <span className="badge-main">Alzheimer’s &amp; Dementia Care</span>
-              </div>
+            <div className="showcase-card-header">
+              <span className="showcase-tag-pill">Alzheimer’s &amp; Dementia Care</span>
             </div>
 
-            <h2 className="showcase-title">AI Voice Companion for Alzheimer’s Memory Loss</h2>
+            <h2 className="showcase-title">Voice Reassurance for Alzheimer&apos;s &amp; Dementia</h2>
             <p className="showcase-desc">
-              Engineered specifically for Alzheimer’s disease and progressive memory loss. When an elder experiences acute disorientation or late-day sundowning anxiety, Kural calms them through familiar family voice therapy and non-confrontational validation.
+              An AI voice companion calming memory loss anxiety, late-day sundowning, and restoring familiar family comfort.
             </p>
 
             <div className="showcase-feature-list">
               <div className="showcase-feature-item">
                 <div className="feature-icon-box">🎙️</div>
                 <div>
-                  <strong>Cloned Daughter Voice Reassurance</strong>
-                  <span>Synthesizes family tone with zero robotic distortion. Hearing their daughter&apos;s voice immediately de-escalates disorientation without fear.</span>
+                  <strong>Cloned Daughter Voice</strong>
+                  <span>Reassuring family tone so the elder hears familiar comfort during confusion</span>
                 </div>
               </div>
               <div className="showcase-feature-item">
-                <div className="feature-icon-box">🧠</div>
+                <div className="feature-icon-box">⚡</div>
                 <div>
-                  <strong>Agitation &amp; Sundowning ML (LinuxONE)</strong>
-                  <span>Real-time neural distress classifier detects confusion spikes and repetitive speech loops in milliseconds, pivoting to soothing validation.</span>
+                  <strong>Agitation &amp; Sundowning ML</strong>
+                  <span>Classifies distress live, pivoting to soothing validation before anxiety peaks</span>
                 </div>
               </div>
               <div className="showcase-feature-item">
                 <div className="feature-icon-box">🌸</div>
                 <div>
-                  <strong>Memory Validation (Never Correction)</strong>
-                  <span>Following Alzheimer&apos;s clinical best practices: never contradicts forgotten facts, gently anchoring the elder into cherished cultural rituals.</span>
+                  <strong>Sensory Memory Anchors</strong>
+                  <span>Reconnecting fading memories through familiar Tamil and English cultural rituals</span>
                 </div>
               </div>
-            </div>
-
-            <div className="showcase-clinical-seal">
-              <span>✨</span>
-              <span>AI for Good: Validated for Alzheimer&apos;s agitation, circadian sundowning, and memory repetition.</span>
             </div>
           </div>
         </aside>
@@ -96,9 +87,9 @@ export default function MobileDeviceFrame({ children }) {
           <header className="web-preview-header-bar">
             <div className="web-preview-pill">
               <span className="preview-pulse-dot"></span>
-              <span className="preview-brand-tag">🧠 KURAL</span>
+              <span className="preview-brand-tag">Kural - Your Companion</span>
               <span className="preview-divider">•</span>
-              <span className="preview-label">AI Alzheimer’s &amp; Dementia Memory Companion</span>
+              <span className="preview-label">Alzheimer’s &amp; Dementia Memory Care</span>
               <span className="preview-divider">•</span>
               <span className="preview-sub">Interactive Mobile View</span>
               <span className="preview-hint-tag">↕ Scroll inside phone</span>
@@ -171,46 +162,37 @@ export default function MobileDeviceFrame({ children }) {
         {/* Right Side Caregiver Sync Card (Visible on desktop screens) */}
         <aside className="web-showcase-sidebar sidebar-right" aria-hidden="true">
           <div className="showcase-card">
-            <div className="showcase-badge-banner caregiver-badge">
-              <span className="badge-icon">💜</span>
-              <div className="badge-text-group">
-                <span className="badge-kicker">FAMILY &amp; CLINICAL TELEMETRY</span>
-                <span className="badge-main">Dementia Agitation &amp; Sundowning Command</span>
-              </div>
+            <div className="showcase-card-header">
+              <span className="showcase-tag-pill tag-purple">Caregiver Telemetry</span>
             </div>
 
-            <h2 className="showcase-title">Sundowning &amp; Dementia Behavioral Telemetry</h2>
+            <h2 className="showcase-title">Sundowning &amp; Memory Telemetry</h2>
             <p className="showcase-desc">
-              Empowering long-distance family caregivers with continuous dementia behavioral monitoring, late-afternoon sundowning detection, and doctor-ready clinical tranquility tracking.
+              Empowering caregivers with real-time dementia behavioral telemetry and doctor-ready clinical tranquility tracking.
             </p>
 
             <div className="showcase-feature-list">
               <div className="showcase-feature-item">
                 <div className="feature-icon-box">🌿</div>
                 <div>
-                  <strong>Circadian Sundowning Tracking (4–8 PM)</strong>
-                  <span>Continuous tranquility scoring tracking the classic late-afternoon dementia anxiety &amp; confusion surge, triggering evening calming cues.</span>
+                  <strong>Circadian Sundowning Tracking</strong>
+                  <span>Continuous peace scoring tracking late-afternoon (4-8 PM) anxiety and confusion</span>
                 </div>
               </div>
               <div className="showcase-feature-item">
                 <div className="feature-icon-box">📍</div>
                 <div>
-                  <strong>Dementia Wandering &amp; Disorientation Safety</strong>
-                  <span>Boundary verification easing disoriented exit-seeking through reassuring voice guidance without sounding panic alarms.</span>
+                  <strong>Dementia Wandering Safety</strong>
+                  <span>Boundary verification easing disoriented exit-seeking without triggering alarm</span>
                 </div>
               </div>
               <div className="showcase-feature-item">
                 <div className="feature-icon-box">📋</div>
                 <div>
-                  <strong>Geriatric Neurologist Clinical Export</strong>
-                  <span>1-click clinical logs of memory triggers, repetitive speech frequency, and calming efficacy prepared for memory clinic reviews.</span>
+                  <strong>Geriatric Neurologist Export</strong>
+                  <span>1-click clinical logs of memory triggers and mood reactions for memory care doctors</span>
                 </div>
               </div>
-            </div>
-
-            <div className="showcase-clinical-seal">
-              <span>🛡️</span>
-              <span>Continuous tranquility scoring &amp; non-invasive wandering safety for memory care families.</span>
             </div>
           </div>
         </aside>

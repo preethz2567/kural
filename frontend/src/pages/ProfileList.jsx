@@ -10,7 +10,9 @@ export default function ProfileList() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedId, setSelectedId] = useState(() => {
-    return localStorage.getItem('kural_active_patient_id') || 'patient_kalyani'
+    const stored = localStorage.getItem('kural_active_patient_id')
+    const isCustom = stored && stored !== 'patient_001' && stored !== 'patient_kalyani'
+    return isCustom ? stored : 'patient_kalyani'
   })
 
   useEffect(() => {
