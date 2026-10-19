@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { listPatients } from '../api.js'
+import KuralLogo from '../components/KuralLogo.jsx'
 import '../App.css'
 
 export default function ProfileList() {
@@ -61,7 +62,7 @@ export default function ProfileList() {
       {/* Top Capsule Header */}
       <header className="stitch-header">
         <div className="header-pill-badge">
-          <span className="wave-icon">❙❙•</span>
+          <KuralLogo size={22} />
           <span className="tamil-logo">குரல்</span>
           <span className="kural-tag">KURAL</span>
           <span className="header-dot">•</span>
