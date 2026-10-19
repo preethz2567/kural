@@ -369,6 +369,7 @@ export default function CompanionChat() {
         session_id: sessionId,
         message: trimmed,
         language: langMode,
+        include_audio: false,
       })
 
       const rawReply = data.response || 'No response returned.'
@@ -384,25 +385,62 @@ export default function CompanionChat() {
       }
       recordDistressTurn(activePatientId, sessionId, trimmed, data.distress || { level: 'none' })
 
+      const companionMsgId = 'cmp_' + Date.now()
       const companionMessage = {
-        id: 'cmp_' + Date.now(),
+        id: companionMsgId,
         sender: 'companion',
         text: cleanReply,
         timestamp: new Date().toISOString(),
         distress: data.distress,
         isMock: isMock,
         audio: data.audio || null,
+        isSynthesizingVoice: autoVoiceEnabled && !data.audio?.audio_base64,
       }
 
+      // Immediately display chat output to user with zero delay
       setMessages((prev) => {
         const updated = [...prev, companionMessage]
         saveSavedMessages(activePatientId, updated)
         return updated
       })
+      setIsLoading(false)
 
-      // Automatic Voice Cloning Playback: immediately speaks in caregiver's voice
+      // Asynchronous Voice Cloning: synthesize in background, then play when ready
       if (autoVoiceEnabled) {
-        playAudioResponse(data.audio, cleanReply, companionMessage.id)
+        if (data.audio?.audio_base64) {
+          playAudioResponse(data.audio, cleanReply, companionMsgId)
+        } else {
+          const replyHasTamil = /[\u0B80-\u0BFF]/.test(cleanReply)
+          const voiceLang = replyHasTamil || langMode === 'ta' ? 'ta' : 'en'
+
+          synthesizeVoiceSpeech({
+            patient_id: activePatientId,
+            text: cleanReply,
+            language: voiceLang,
+          })
+            .then((audioData) => {
+              setMessages((prev) => {
+                const updated = prev.map((m) =>
+                  m.id === companionMsgId
+                    ? { ...m, audio: audioData, isSynthesizingVoice: false }
+                    : m
+                )
+                saveSavedMessages(activePatientId, updated)
+                return updated
+              })
+              // Play cloned voice as soon as ready!
+              playAudioResponse(audioData, cleanReply, companionMsgId)
+            })
+            .catch((err) => {
+              console.warn('[CompanionChat] Background voice synthesis failed, falling back:', err)
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === companionMsgId ? { ...m, isSynthesizingVoice: false } : m
+                )
+              )
+              speakReply(cleanReply, companionMsgId)
+            })
+        }
       }
     } catch (err) {
       setError(err.message || 'Unable to connect to companion service.')
