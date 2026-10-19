@@ -950,6 +950,42 @@ Generated with love by Kural Dementia Companion Care.
                   </span>
                 </div>
 
+                <div className="test-phrase-chips">
+                  <button
+                    type="button"
+                    className={`test-chip ${testSynthesizeText.includes('வணக்கம்') ? 'active' : ''}`}
+                    onClick={() => setTestSynthesizeText(
+                      activePatientId === 'patient_kalyani'
+                        ? 'வணக்கம் அம்மா, நான் மீரா பேசுறேன். இன்னைக்கு நல்லா ஓய்வெடுங்க, உங்க கூடவே இருக்கேன்.'
+                        : `Hello ${activePatient?.preferred_name || 'Nell'}, I am right here with you.`
+                    )}
+                  >
+                    🗣️ Tamil Script
+                  </button>
+                  <button
+                    type="button"
+                    className={`test-chip ${testSynthesizeText.toLowerCase().includes('vanakkam') ? 'active' : ''}`}
+                    onClick={() => setTestSynthesizeText(
+                      activePatientId === 'patient_kalyani'
+                        ? 'Vanakkam Amma, naan Meera pesuren. Innaiku nalla oivedunga, unga koodave irukken.'
+                        : `Good morning Mom, Clara here. Everything is safe and calm.`
+                    )}
+                  >
+                    🔤 Phonetic Tanglish (Best XTTS Timbre)
+                  </button>
+                  <button
+                    type="button"
+                    className={`test-chip ${testSynthesizeText.toLowerCase().includes('hello') ? 'active' : ''}`}
+                    onClick={() => setTestSynthesizeText(
+                      activePatientId === 'patient_kalyani'
+                        ? 'Hello Amma, this is your daughter Meera speaking. You are safe and warm at home with us.'
+                        : `Hello ${activePatient?.preferred_name || 'Nell'}, this is your daughter speaking. You are safe and loved.`
+                    )}
+                  >
+                    ✨ English (Authentic Voice)
+                  </button>
+                </div>
+
                 <div className="test-synthesis-box">
                   <input
                     type="text"

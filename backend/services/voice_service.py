@@ -103,6 +103,57 @@ async def synthesize_neural_speech(
         
     return None
 
+def transliterate_tamil_to_phonetic(text: str) -> str:
+    """
+    Phonetically transliterates Tamil unicode script to Latin/English characters 
+    so Coqui XTTS-v2 can synthesize it authentically in the caregiver's cloned voice.
+    """
+    vowels = {
+        '\u0B85': 'a', '\u0B86': 'aa', '\u0B87': 'i', '\u0B88': 'ee', '\u0B89': 'u',
+        '\u0B8A': 'oo', '\u0B8E': 'e', '\u0B8F': 'ae', '\u0B90': 'ai', '\u0B92': 'o',
+        '\u0B93': 'oa', '\u0B94': 'au', '\u0B83': 'h'
+    }
+    consonants = {
+        '\u0B95': 'k', '\u0B99': 'ng', '\u0B9A': 's', '\u0B9E': 'ny',
+        '\u0B9F': 't', '\u0BA3': 'n', '\u0BA4': 'th', '\u0BA8': 'n',
+        '\u0BAA': 'p', '\u0BAE': 'm', '\u0BAF': 'y', '\u0BB0': 'r',
+        '\u0BB2': 'l', '\u0BB5': 'v', '\u0BB4': 'zh', '\u0BB3': 'l',
+        '\u0BB1': 'r', '\u0BA9': 'n', '\u0B9C': 'j', '\u0BB7': 'sh',
+        '\u0BB8': 's', '\u0BB9': 'h'
+    }
+    modifiers = {
+        '\u0BBE': 'aa', '\u0BBF': 'i', '\u0BC0': 'ee', '\u0BC1': 'u',
+        '\u0BC2': 'oo', '\u0BC6': 'e', '\u0BC7': 'ae', '\u0BC8': 'ai',
+        '\u0BCA': 'o', '\u0BCB': 'oa', '\u0BCC': 'au'
+    }
+    PULLI = '\u0BCD'
+    
+    out = []
+    i = 0
+    while i < len(text):
+        c = text[i]
+        if c in vowels:
+            out.append(vowels[c])
+            i += 1
+        elif c in consonants:
+            cons = consonants[c]
+            if i + 1 < len(text):
+                nxt = text[i + 1]
+                if nxt == PULLI:
+                    out.append(cons)
+                    i += 2
+                    continue
+                elif nxt in modifiers:
+                    out.append(cons + modifiers[nxt])
+                    i += 2
+                    continue
+            out.append(cons + 'a')
+            i += 1
+        else:
+            out.append(c)
+            i += 1
+    return ''.join(out)
+
 async def clone_caregiver_voice(
     patient_id: str,
     audio_base64: str,
@@ -121,11 +172,13 @@ async def clone_caregiver_voice(
     service_url, timeout_sec, service_api_key = get_voice_cloning_config()
     if service_url:
         try:
+            # Clean data URL prefix if present
+            clean_sample = audio_base64.split(",", 1)[1] if "," in audio_base64 else audio_base64
             req_data = json.dumps({
                 "patient_id": patient_id,
                 "speaker_name": speaker_name,
-                "audio_base64": audio_base64,
-                "language": language,
+                "audio_base64": clean_sample,
+                "language": "en",
                 "model": "xtts-v2",
             }).encode("utf-8")
             
@@ -195,11 +248,12 @@ async def synthesize_speech(
             # Ensure speaker sample is enrolled on remote GPU worker if available
             if sample and len(sample) > 50:
                 try:
+                    clean_sample = sample.split(",", 1)[1] if "," in sample else sample
                     enroll_data = json.dumps({
                         "patient_id": patient_id,
                         "speaker_name": speaker_name,
-                        "audio_base64": sample,
-                        "language": "ta" if "ta" in lang.lower() else "en",
+                        "audio_base64": clean_sample,
+                        "language": "en",
                         "model": "xtts-v2",
                     }).encode("utf-8")
                     enroll_req = urllib.request.Request(
@@ -214,10 +268,16 @@ async def synthesize_speech(
                 except Exception as enroll_err:
                     pass
 
+            # If text has Tamil Unicode characters, transliterate to phonetic Latin script for XTTS
+            has_tamil_script = any('\u0b80' <= c <= '\u0bff' for c in (clean_text or text))
+            xtts_text = clean_text or text
+            if has_tamil_script:
+                xtts_text = transliterate_tamil_to_phonetic(xtts_text)
+
             req_data = json.dumps({
                 "voice_id": profile.get("voice_id"),
-                "text": clean_text or text,
-                "language": "ta" if "ta" in lang.lower() else "en",
+                "text": xtts_text,
+                "language": "en",
                 "speed": profile.get("speed", 0.92),
             }).encode("utf-8")
             
@@ -244,6 +304,9 @@ async def synthesize_speech(
                             "speed": profile.get("speed", 0.92),
                             "pitch": profile.get("pitch", 1.04),
                         }
+        except urllib.error.HTTPError as e:
+            err_body = e.read().decode("utf-8", errors="replace")
+            print(f"[Voice Service] Remote XTTS synthesis HTTP Error {e.code}: {err_body}. Falling back to neural synthesis.")
         except Exception as e:
             print(f"[Voice Service] Remote XTTS synthesis failed or timed out: {e}. Falling back to neural synthesis.")
 
