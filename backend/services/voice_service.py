@@ -263,7 +263,7 @@ async def synthesize_speech(
                     )
                     if service_api_key:
                         enroll_req.add_header("Authorization", f"Bearer {service_api_key}")
-                    with urllib.request.urlopen(enroll_req, timeout=10.0) as _:
+                    with urllib.request.urlopen(enroll_req, timeout=min(timeout_sec, 3.0)) as _:
                         pass
                 except Exception as enroll_err:
                     pass
@@ -289,7 +289,7 @@ async def synthesize_speech(
             if service_api_key:
                 req.add_header("Authorization", f"Bearer {service_api_key}")
                 
-            with urllib.request.urlopen(req, timeout=timeout_sec) as resp:
+            with urllib.request.urlopen(req, timeout=min(timeout_sec, 3.0)) as resp:
                 if resp.status == 200:
                     data = json.loads(resp.read().decode("utf-8"))
                     audio_b64 = data.get("audio_base64")
