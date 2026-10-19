@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { listPatients, getVoiceProfile, cloneCaregiverVoice, synthesizeVoiceSpeech } from '../api.js'
 import { CADENCE_PRESETS } from '../cadencePresets.js'
 import { base64ToAudioUrl, playClonedAudio, unlockAudio } from '../audioUtils.js'
+import KuralLogo from '../components/KuralLogo.jsx'
 import '../App.css'
 
 const DEFAULT_OBSERVATION_LOGS = [
@@ -601,7 +602,7 @@ Generated with love by Kural Dementia Companion Care.
       {/* Top Capsule Header */}
       <header className="stitch-header">
         <div className="header-pill-badge">
-          <span className="wave-icon">❙❙•</span>
+          <KuralLogo size={22} />
           <span className="tamil-logo">குரல்</span>
           <span className="kural-tag">KURAL</span>
           <span className="header-dot">•</span>
