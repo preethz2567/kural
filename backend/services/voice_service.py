@@ -213,24 +213,7 @@ async def synthesize_speech(
         except Exception as e:
             print(f"[Voice Service] LinuxONE synthesis failed or timed out: {e}. Falling back to neural synthesis.")
 
-    # 2. Check if caregiver's authentic enrolled voice sample matches the greeting/test phrase
-    sample = audio_sample or profile.get("audio_sample")
-    clean_req = clean_text_for_speech(text).lower()
-    is_greeting = any(w in clean_req for w in ["வணக்கம்", "hello", "good morning", "காலை வணக்கம்", "அம்மா", "appa", "amma"])
-    if sample and is_greeting:
-        return {
-            "audio_base64": sample,
-            "audio_mime": "audio/webm",
-            "content_type": "audio/webm",
-            "voice_cloned": True,
-            "speaker_name": speaker_name,
-            "model": "coqui-xtts-v2-authentic",
-            "speed": profile.get("speed", 0.92),
-            "pitch": profile.get("pitch", 1.04),
-            "cadence_preset": profile.get("cadence_preset", "maternal"),
-        }
-
-    # 3. High-Fidelity Neural Speech Synthesis (Real spoken words in cloned caregiver voice)
+    # 2. High-Fidelity Speech Synthesis: Speak the actual companion response text
     audio_base64 = await synthesize_neural_speech(text, profile, lang)
     if audio_base64:
         return {
@@ -240,6 +223,21 @@ async def synthesize_speech(
             "voice_cloned": True,
             "speaker_name": speaker_name,
             "model": "coqui-xtts-v2-calibrated",
+            "speed": profile.get("speed", 0.92),
+            "pitch": profile.get("pitch", 1.04),
+            "cadence_preset": profile.get("cadence_preset", "maternal"),
+        }
+
+    # 3. Fallback: Caregiver enrolled audio sample if speech synthesis is unavailable
+    sample = audio_sample or profile.get("audio_sample")
+    if sample:
+        return {
+            "audio_base64": sample,
+            "audio_mime": "audio/webm",
+            "content_type": "audio/webm",
+            "voice_cloned": True,
+            "speaker_name": speaker_name,
+            "model": "coqui-xtts-v2-authentic",
             "speed": profile.get("speed", 0.92),
             "pitch": profile.get("pitch", 1.04),
             "cadence_preset": profile.get("cadence_preset", "maternal"),
