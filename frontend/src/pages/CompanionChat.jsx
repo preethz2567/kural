@@ -995,7 +995,23 @@ export default function CompanionChat() {
                             } else if (msg.audio?.audio_base64) {
                               playAudioResponse(msg.audio, msg.text, msg.id)
                             } else {
-                              speakReply(msg.text, msg.id)
+                              const hasTa = /[\u0B80-\u0BFF]/.test(msg.text)
+                              synthesizeVoiceSpeech({
+                                patient_id: activePatientId,
+                                text: msg.text,
+                                language: hasTa || langMode === 'ta' ? 'ta' : 'en',
+                              })
+                                .then((audioData) => {
+                                  setMessages((prev) => {
+                                    const updated = prev.map((m) => (m.id === msg.id ? { ...m, audio: audioData } : m))
+                                    saveSavedMessages(activePatientId, updated)
+                                    return updated
+                                  })
+                                  playAudioResponse(audioData, msg.text, msg.id)
+                                })
+                                .catch(() => {
+                                  speakReply(msg.text, msg.id)
+                                })
                             }
                           }}
                           title={speakingMessageId === msg.id ? 'Stop audio' : 'Replay in voice'}
@@ -1003,8 +1019,13 @@ export default function CompanionChat() {
                           {speakingMessageId === msg.id ? '⏹ Stop' : isSpeaking ? '🔊 Replay' : '▶ Replay'}
                         </button>
                         {msg.audio?.speaker_name && (
-                          <span className="cloned-voice-bubble-badge" title="Synthesized with open-source Coqui XTTS-v2 voice model">
+                          <span className="cloned-voice-bubble-badge" title="Synthesized in familiar caregiver voice">
                             🎙️ {msg.audio.speaker_name}&apos;s Cloned Voice
+                          </span>
+                        )}
+                        {msg.isSynthesizingVoice && (
+                          <span className="cloned-voice-preparing-badge">
+                            🎙️ Voice preparing...
                           </span>
                         )}
                         <div className={`bubble-reaction-note reaction-level-${msg.distress?.level || 'none'}`}>
@@ -1057,7 +1078,7 @@ export default function CompanionChat() {
                   </span>
                   <span className="live-speech-engine">
                     <span className="engine-pulse-dot" />
-                    {isClonedAudio ? 'Coqui XTTS-v2 Active • LinuxONE Microservice' : 'Gentle Maternal Cadence'}
+                    {isClonedAudio ? 'Familiar Caregiver Voice Active • Gentle Cadence' : 'Gentle Maternal Cadence'}
                   </span>
                 </div>
               </div>
