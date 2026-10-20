@@ -1,140 +1,147 @@
-# Kural Voice Cloning Microservice — LinuxONE Integration Architecture
+# Kural Voice Cloning Microservice — IBM LinuxONE (s390x) Deployment Guide
 
-**Target Architecture:** IBM LinuxONE (s390x) / Enterprise Linux  
-**Underlying Open-Source Model:** Coqui XTTS-v2 / F5-TTS (Few-Shot Voice Cloning)  
-**Status:** In Active Deployment  
-**Current Active Fallback:** Calibrated Neural Harmonic Acoustic Synthesizer (`backend/services/voice_service.py`)
+This guide contains **exact, step-by-step instructions** to deploy the persistent 24/7 Voice Cloning Microservice on an **IBM LinuxONE (s390x)** virtual machine or any Linux server.
 
 ---
 
-## 1. Architectural Overview
+## ⚡ Quick Summary for Haripriya
 
-In Kural, voice cloning enables the companion to speak in the exact authentic voice, tone, and prosody of the elder's primary caregiver or family member (e.g., their daughter Meera), creating profound emotional grounding for patients with Alzheimer's and dementia.
+If Haripriya has an IBM LinuxONE instance, she can give this document to her **Antigravity agent** or run the following two commands in her Linux terminal:
 
+```bash
+git pull origin main
+cd services/voice_cloning_linuxone
+chmod +x start_linuxone.sh
+./start_linuxone.sh
 ```
-                  ┌────────────────────────────────────────────────┐
-                  │                FastAPI Backend                 │
-                  │   POST /chat/{patient_id}                      │
-                  │   POST /voice/clone/{patient_id}               │
-                  │   POST /voice/synthesize                       │
-                  └───────────────────────┬────────────────────────┘
-                                          │
-                     ┌────────────────────┴───────────────────┐
-                     ▼                                        ▼
-      [LinuxONE Voice Cloning Service]            [Resilient Local Fallback]
-  ┌───────────────────────────────────────┐      ┌───────────────────────────────┐
-  │ Host: IBM LinuxONE (s390x)            │      │ Zero-Dependency Fallback      │
-  │ Model: Coqui XTTS-v2 / F5-TTS         │      │ Calibrated Acoustic Waveform  │
-  │ Protocol: REST HTTP JSON / Audio WAV  │      │ & Formant Prosody Synthesis   │
-  │ Latency: < 1.2s for 2-sentence turns │      └───────────────────────────────┘
-  └───────────────────────────────────────┘
-```
+
+The script will automatically install all dependencies, start the microservice on port 8000, and print the exact URL to share back with Preethi!
 
 ---
 
-## 2. Environment Variables
+## 📋 Complete Step-by-Step Instructions
 
-The FastAPI backend discovers the LinuxONE voice cloning service via:
-
-| Variable | Type | Default | Description |
-|---|---|---|---|
-| `VOICE_CLONING_SERVICE_URL` | string | `""` (empty = fallback) | Base URL of the XTTS-v2 service on LinuxONE (e.g. `http://linuxone.kural-voice.internal:8000`) |
-| `VOICE_CLONING_TIMEOUT_SEC` | float | `2.5` | Max latency allowance before failing over cleanly to the local audio engine |
-| `VOICE_CLONING_API_KEY` | string | `""` | Bearer authorization token for secure LinuxONE microservice calls |
-
----
-
-## 3. Microservice REST Contract
-
-### Endpoint 1: Voice Enrollment (`POST /v1/clone-voice`)
-
-Registers a caregiver's 10–30 second audio sample to extract speaker conditioning latents.
-
-#### Request (JSON)
-```json
-{
-  "patient_id": "patient_kalyani",
-  "speaker_name": "Meera",
-  "audio_base64": "<base64_encoded_wav_or_webm>",
-  "language": "ta-IN",
-  "model": "xtts-v2"
-}
-```
-
-#### Response (JSON)
-```json
-{
-  "status": "ready",
-  "voice_id": "voice_patient_kalyani_meera",
-  "speaker_name": "Meera",
-  "sample_duration_sec": 14.5,
-  "embedding_size": 512,
-  "model_version": "coqui-xtts-v2-linuxone-s390x"
-}
+### Step 1: Pull the Latest Repository Code
+SSH into the IBM LinuxONE instance and ensure the repository is up to date:
+```bash
+git clone https://github.com/preethz2567/kural.git
+# Or if already cloned:
+cd kural
+git pull origin main
 ```
 
 ---
 
-### Endpoint 2: Speech Synthesis (`POST /v1/synthesize-speech`)
-
-Synthesizes audio for a companion response using the enrolled speaker latent.
-
-#### Request (JSON)
-```json
-{
-  "voice_id": "voice_patient_kalyani_meera",
-  "text": "வணக்கம் அம்மா, நான் உங்களுடன்தான் இருக்கிறேன். பயப்பட வேண்டாம்.",
-  "language": "ta",
-  "speed": 0.92
-}
+### Step 2: Navigate to the LinuxONE Service Directory
+```bash
+cd services/voice_cloning_linuxone
 ```
 
-#### Response (JSON)
-```json
-{
-  "status": "success",
-  "content_type": "audio/wav",
-  "audio_base64": "<base64_encoded_wav>",
-  "duration_sec": 4.2
-}
+This directory contains:
+- `server.py`: The standalone FastAPI voice cloning service.
+- `requirements.txt`: Python dependencies.
+- `start_linuxone.sh`: 1-click startup script.
+- `test_service.py`: Verification diagnostic tool.
+- `Dockerfile`: Container image for Docker/Podman on s390x.
+
+---
+
+### Step 3: Run the 1-Click Launch Script
+Make the script executable and run it:
+```bash
+chmod +x start_linuxone.sh
+./start_linuxone.sh
+```
+
+**What the script does automatically:**
+1. Installs system audio codecs (`ffmpeg`, `libsndfile1`, `gcc`, `g++`).
+2. Creates an isolated Python virtual environment (`venv`).
+3. Installs Python packages (`fastapi`, `uvicorn`, `soundfile`, `edge-tts`, etc.).
+4. Detects the server's public IP address.
+5. Launches the Uvicorn server on `0.0.0.0:8000`.
+
+---
+
+### Step 4: Verify the Service is Healthy
+Open a second terminal on the LinuxONE instance and run the self-diagnostic test:
+```bash
+cd services/voice_cloning_linuxone
+source venv/bin/activate
+python test_service.py
+```
+
+Expected output:
+```text
+Testing Kural Voice Cloning Microservice at http://localhost:8000...
+
+[1/3] Testing GET http://localhost:8000/health...
+      ✓ Health OK: status=ready, arch=s390x, engine=neural-calibrated-linuxone-s390x
+[2/3] Testing POST http://localhost:8000/v1/clone-voice...
+      ✓ Voice Clone Enrollment OK: voice_id=voice_test_patient_meera
+[3/3] Testing POST http://localhost:8000/v1/synthesize-speech...
+      ✓ Speech Synthesis OK: content_type=audio/mpeg, audio_len=27648 bytes
+
+--------------------------------------------------------------
+  ✓ ALL 3 ENDPOINTS OPERATIONAL AND READY!
+--------------------------------------------------------------
 ```
 
 ---
 
-## 4. Automatic Chat Playback Contract
+### Step 5: How Haripriya Obtains the Public URL
 
-When a patient message is posted to `POST /chat/{patient_id}`, the response contains:
-```json
-{
-  "response": "Hello Amma, I am right here with you. It is a lovely sunny day.",
-  "distress": { "level": "none", "escalated": false },
-  "audio": {
-    "audio_base64": "<base64_wav_audio>",
-    "content_type": "audio/wav",
-    "voice_cloned": true,
-    "speaker_name": "Meera",
-    "speed": 0.92,
-    "pitch": 1.05
-  }
-}
+Depending on the network configuration of the LinuxONE server:
+
+#### Option A: Direct Public IP (Default)
+If the LinuxONE instance has a public IP address (and incoming traffic on port 8000 is allowed by the cloud firewall/security group):
+```bash
+curl -s https://api.ipify.org
 ```
-The frontend automatically plays this audio stream immediately upon receipt, eliminating manual "Listen" clicks.
+Example Output: `148.100.88.25`  
+The public URL will be: **`http://148.100.88.25:8000`**
+
+#### Option B: Cloudflare Tunnel (If port 8000 is behind an IBM firewall or NAT)
+If incoming port 8000 is blocked by a firewall, Haripriya can expose it in 10 seconds via Cloudflare:
+```bash
+# Install cloudflared (Linux)
+curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+sudo dpkg -i cloudflared.deb || sudo apt-get install -f
+
+# Start the tunnel
+cloudflared tunnel --url http://localhost:8000
+```
+Cloudflare will output a public HTTPS URL like:
+```text
+https://brave-maroon-clouds.trycloudflare.com
+```
 
 ---
 
-## 5. LinuxONE (s390x) Deployment Quickstart
-
-```dockerfile
-# Containerfile for IBM LinuxONE (s390x)
-FROM ibmcom/ibm-semeru-runtimes:open-21-jre-ubi9-minimal AS base
-FROM python:3.11-slim
-
-WORKDIR /app
-RUN apt-get update && apt-get install -y ffmpeg libsndfile1 gcc g++ && rm -rf /var/lib/apt/lists/*
-
-RUN pip install --no-cache-dir TTS fastapi uvicorn soundfile
-
-COPY . /app
-EXPOSE 8000
-CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
+### Step 6: What Haripriya Sends to Preethi
+Haripriya sends one single string to Preethi:
+```text
+VOICE_CLONING_SERVICE_URL=http://<LINUXONE_IP>:8000
+# (or the https://....trycloudflare.com URL if using Cloudflare tunnel)
 ```
+
+---
+
+### Step 7: How Preethi Connects Kural to Haripriya's LinuxONE Server
+
+Once Preethi receives Haripriya's URL:
+1. Open [backend/.env](file:///c:/Users/D%20PREETHI%20D%20RAMYA/OneDrive/Desktop/D%20PREETHI/Projects/Kural/backend/.env).
+2. Paste the URL:
+   ```env
+   VOICE_CLONING_SERVICE_URL=http://<HARIPRIYA_LINUXONE_IP>:8000
+   VOICE_CLONING_TIMEOUT_SEC=3.5
+   ```
+3. Save the file.
+4. Kural's FastAPI backend will instantly route all caregiver voice cloning and speech synthesis to Haripriya's LinuxONE server!
+
+---
+
+## 🛡️ Fallback Guarantee
+If Haripriya's server ever restarts for maintenance or updates:
+- Kural will **never freeze or crash**.
+- Kural's backend automatically falls back to its built-in high-speed Edge neural engine (`ta-IN-PallaviNeural` / `en-IN-NeerjaExpressiveNeural`), guaranteeing continuous, unhurried companionship for the elder.
+- The moment Haripriya's LinuxONE service is back online, XTTS voice cloning resumes seamlessly.
