@@ -67,7 +67,7 @@ export function base64ToArrayBuffer(base64Data) {
  */
 export function base64ToAudioUrl(base64Data, mimeType = 'audio/mpeg') {
   if (!base64Data) return ''
-  if (base64Data.startsWith('blob:') || base64Data.startsWith('http')) {
+  if (base64Data.startsWith('blob:') || base64Data.startsWith('http') || base64Data.startsWith('data:')) {
     return base64Data
   }
   try {
@@ -82,8 +82,10 @@ export function base64ToAudioUrl(base64Data, mimeType = 'audio/mpeg') {
 
 /**
  * Plays neural synthesized audio with dual-engine reliability:
- * Engine 1: Web Audio API (direct native MP3 stream decoding, zero Blob stalling, zero MIME mismatches)
- * Engine 2: HTML5 Audio element with Blob URL / Data URI fallback
+ * Engine 1 (Primary): Native HTML5 Audio element with Blob URL / Data URI.
+ *   - Works natively with MP3, WAV, WebM
+ *   - Bypasses Web Audio API AudioContext 'suspended' state restrictions
+ * Engine 2 (Secondary): Web Audio API (Hardware PCM Decoding) fallback
  *
  * @param {string | { audio_base64?: string, audio_mime?: string, content_type?: string }} audioPayload
  * @param {object} [options]
@@ -104,24 +106,24 @@ export function playClonedAudio(audioPayload, options = {}) {
   }
 
   let isPlaying = false
-  let activeSourceNode = null
   let activeAudioElement = null
+  let activeSourceNode = null
   let createdBlobUrl = null
 
   const stop = () => {
-    if (activeSourceNode) {
-      try {
-        activeSourceNode.stop()
-        activeSourceNode.disconnect()
-      } catch {}
-      activeSourceNode = null
-    }
     if (activeAudioElement) {
       try {
         activeAudioElement.pause()
         activeAudioElement.currentTime = 0
       } catch {}
       activeAudioElement = null
+    }
+    if (activeSourceNode) {
+      try {
+        activeSourceNode.stop()
+        activeSourceNode.disconnect()
+      } catch {}
+      activeSourceNode = null
     }
     if (createdBlobUrl && createdBlobUrl.startsWith('blob:')) {
       try {
@@ -135,7 +137,48 @@ export function playClonedAudio(audioPayload, options = {}) {
     }
   }
 
-  // Attempt Engine 1: Web Audio API (Native Hardware PCM Decoding)
+  // Engine 1 (Primary): Native HTML5 Audio element
+  const tryHtml5Audio = () => {
+    const mime = (typeof audioPayload === 'object' && (audioPayload.audio_mime || audioPayload.content_type)) || 'audio/mpeg'
+    const audioUrl = base64ToAudioUrl(base64Data, mime)
+    createdBlobUrl = audioUrl
+
+    return new Promise((resolve, reject) => {
+      const audio = new Audio(audioUrl)
+      activeAudioElement = audio
+
+      audio.onplay = () => {
+        isPlaying = true
+        onStart?.()
+        resolve(true)
+      }
+
+      audio.onended = () => {
+        if (isPlaying) {
+          isPlaying = false
+          activeAudioElement = null
+          if (createdBlobUrl && createdBlobUrl.startsWith('blob:')) {
+            try { URL.revokeObjectURL(createdBlobUrl) } catch {}
+            createdBlobUrl = null
+          }
+          onEnded?.()
+        }
+      }
+
+      audio.onerror = () => {
+        reject(new Error(audio.error?.message || 'HTML5 Audio playback error'))
+      }
+
+      const playPromise = audio.play()
+      if (playPromise !== undefined) {
+        playPromise.catch((playErr) => {
+          reject(playErr)
+        })
+      }
+    })
+  }
+
+  // Engine 2 (Secondary): Web Audio API hardware decoding
   const tryWebAudio = async () => {
     const ctx = getSharedAudioContext()
     if (!ctx) throw new Error('Web Audio not supported')
@@ -144,7 +187,6 @@ export function playClonedAudio(audioPayload, options = {}) {
     }
 
     const arrayBuffer = base64ToArrayBuffer(base64Data)
-    // Clone buffer because decodeAudioData detaches the underlying ArrayBuffer
     const clonedBuffer = arrayBuffer.slice(0)
 
     return new Promise((resolve, reject) => {
@@ -180,54 +222,16 @@ export function playClonedAudio(audioPayload, options = {}) {
     })
   }
 
-  // Engine 2 Fallback: HTML5 Audio Element with Blob URL
-  const tryHtml5Audio = async () => {
-    const mime = (typeof audioPayload === 'object' && (audioPayload.audio_mime || audioPayload.content_type)) || 'audio/mpeg'
-    const audioUrl = base64ToAudioUrl(base64Data, mime)
-    createdBlobUrl = audioUrl
-
-    return new Promise((resolve, reject) => {
-      const audio = new Audio(audioUrl)
-      activeAudioElement = audio
-
-      audio.onplay = () => {
-        isPlaying = true
-        onStart?.()
-        resolve(true)
-      }
-
-      audio.onended = () => {
-        if (isPlaying) {
-          isPlaying = false
-          activeAudioElement = null
-          if (createdBlobUrl && createdBlobUrl.startsWith('blob:')) {
-            URL.revokeObjectURL(createdBlobUrl)
-            createdBlobUrl = null
-          }
-          onEnded?.()
-        }
-      }
-
-      audio.onerror = (e) => {
-        reject(new Error(audio.error?.message || 'Audio element playback error'))
-      }
-
-      audio.play().catch((playErr) => {
-        reject(playErr)
-      })
-    })
-  }
-
-  // Execute playback
-  tryWebAudio()
-    .catch((webAudioErr) => {
-      console.warn('[AudioUtils] Web Audio engine failed, falling back to HTML5 Audio:', webAudioErr)
-      return tryHtml5Audio()
-    })
+  // Execute playback: Try HTML5 Audio first, then Web Audio
+  tryHtml5Audio()
     .catch((html5Err) => {
-      console.error('[AudioUtils] Both audio playback engines failed:', html5Err)
+      console.warn('[AudioUtils] HTML5 audio engine failed, falling back to Web Audio:', html5Err)
+      return tryWebAudio()
+    })
+    .catch((finalErr) => {
+      console.error('[AudioUtils] All audio playback engines failed:', finalErr)
       stop()
-      onError?.(html5Err)
+      onError?.(finalErr)
     })
 
   return {
