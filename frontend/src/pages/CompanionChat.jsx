@@ -417,7 +417,7 @@ export default function CompanionChat() {
           const replyHasTamil = /[\u0B80-\u0BFF]/.test(cleanReply)
           const voiceLang = replyHasTamil || langMode === 'ta' ? 'ta' : 'en'
 
-          // Safety timeout: ensure preparing badge clears after 10s even if network is slow
+          // Safety timeout: ensure preparing badge clears after 15s even if network is slow
           const safetyTimer = setTimeout(() => {
             setMessages((prev) =>
               prev.map((m) =>
@@ -426,8 +426,7 @@ export default function CompanionChat() {
                   : m
               )
             )
-            speakReply(cleanReply, companionMsgId)
-          }, 10000)
+          }, 15000)
 
           synthesizeVoiceSpeech({
             patient_id: activePatientId,
@@ -446,17 +445,16 @@ export default function CompanionChat() {
                 return updated
               })
               // Play cloned voice as soon as ready!
-              playAudioResponse(audioData, cleanReply, companionMsgId)
+              playAudioResponse(audioData, null, companionMsgId)
             })
             .catch((err) => {
               clearTimeout(safetyTimer)
-              console.warn('[CompanionChat] Background voice synthesis failed, falling back:', err)
+              console.warn('[CompanionChat] Background voice synthesis failed:', err)
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === companionMsgId ? { ...m, isSynthesizingVoice: false } : m
                 )
               )
-              speakReply(cleanReply, companionMsgId)
             })
         }
       }
@@ -610,9 +608,9 @@ export default function CompanionChat() {
 
   const stopSpeaking = () => {
     if (clonedAudioRef.current) {
-      clonedAudioRef.current.stop?.()
-      clonedAudioRef.current.pause?.()
+      const controller = clonedAudioRef.current
       clonedAudioRef.current = null
+      controller.stop?.()
     }
     if ('speechSynthesis' in window) {
       speechSynthesis.cancel()
@@ -676,7 +674,7 @@ export default function CompanionChat() {
     speechSynthesis.speak(utterance)
   }
 
-  const playAudioResponse = (audioData, textFallback, msgId = null) => {
+  const playAudioResponse = (audioData, textFallback = null, msgId = null) => {
     stopSpeaking()
 
     if (audioData?.audio_base64) {
@@ -699,19 +697,25 @@ export default function CompanionChat() {
           clonedAudioRef.current = null
         },
         onError: (err) => {
-          console.warn('[Auto-Voice] Cloned neural playback error, falling back to local speech:', err)
+          console.warn('[Auto-Voice] Cloned neural playback error:', err)
           setIsSpeaking(false)
           setIsClonedAudio(false)
           setSpeakingMessageId(null)
           clonedAudioRef.current = null
-          if (textFallback) speakReply(textFallback, msgId)
+          // If browser policy blocked delayed autoplay, do NOT fall back to mechanical robot speech!
+          // The audio is ready on the bubble; elder/caregiver can simply tap Replay.
+          if (err?.name === 'NotAllowedError') {
+            console.log('[Auto-Voice] Autoplay was blocked by browser policy. Voice is ready on bubble.')
+            return
+          }
+          if (textFallback && autoVoiceEnabled) speakReply(textFallback, msgId)
         },
       })
       clonedAudioRef.current = controller
       return
     }
 
-    if (textFallback) {
+    if (textFallback && autoVoiceEnabled) {
       speakReply(textFallback, msgId)
     }
   }
@@ -1012,7 +1016,7 @@ export default function CompanionChat() {
                             if (speakingMessageId === msg.id) {
                               stopSpeaking()
                             } else if (msg.audio?.audio_base64) {
-                              playAudioResponse(msg.audio, msg.text, msg.id)
+                              playAudioResponse(msg.audio, null, msg.id)
                             } else {
                               const hasTa = /[\u0B80-\u0BFF]/.test(msg.text)
                               synthesizeVoiceSpeech({
@@ -1026,7 +1030,7 @@ export default function CompanionChat() {
                                     saveSavedMessages(activePatientId, updated)
                                     return updated
                                   })
-                                  playAudioResponse(audioData, msg.text, msg.id)
+                                  playAudioResponse(audioData, null, msg.id)
                                 })
                                 .catch(() => {
                                   speakReply(msg.text, msg.id)
