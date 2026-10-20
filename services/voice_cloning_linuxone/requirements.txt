@@ -1,0 +1,16 @@
+# Kural Voice Cloning Microservice Dependencies
+# Compatible with IBM LinuxONE (s390x) and x86_64 / arm64 Linux
+
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+pydantic>=2.0.0
+soundfile>=0.12.1
+numpy>=1.24.0
+scipy>=1.10.0
+python-multipart>=0.0.6
+requests>=2.31.0
+edge-tts>=6.1.0
+
+# Optional Coqui XTTS (Standard x86_64 or with s390x PyTorch wheels)
+# If installing on x86_64, uncomment the line below:
+# TTS>=0.22.0
