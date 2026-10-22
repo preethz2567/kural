@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { listPatients } from '../api.js'
+import { getPatientAvatar } from '../avatarUtils.js'
 import KuralLogo from '../components/KuralLogo.jsx'
 import '../App.css'
 
@@ -11,9 +12,7 @@ export default function ProfileList() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedId, setSelectedId] = useState(() => {
-    const stored = localStorage.getItem('kural_active_patient_id')
-    const isCustom = stored && stored !== 'patient_001' && stored !== 'patient_kalyani'
-    return isCustom ? stored : 'patient_kalyani'
+    return localStorage.getItem('kural_active_patient_id') || 'patient_kalyani'
   })
 
   useEffect(() => {
@@ -171,7 +170,7 @@ export default function ProfileList() {
                 <div className="profile-card-top-row">
                   <div className="portal-avatar-ring-small">
                     <img
-                      src={p.patient_id === 'patient_kalyani' ? '/avatar_amma.jpg' : '/avatar_nell.jpg'}
+                      src={getPatientAvatar(p)}
                       alt={preferred}
                       className="portal-avatar-img"
                     />

@@ -19,6 +19,8 @@ export default function Onboarding() {
   const [formData, setFormData] = useState({
     name: '',
     preferred_name: '',
+    photo_url: '',
+    hero_url: '',
     age_range: '',
     preferred_address: '',
     stage: 'unknown',
@@ -49,6 +51,8 @@ export default function Onboarding() {
         setFormData({
           name: p.name || '',
           preferred_name: p.preferred_name || '',
+          photo_url: p.photo_url || p.avatar_url || '',
+          hero_url: p.hero_url || '',
           age_range: p.age_range || '',
           preferred_address: p.preferred_address || '',
           stage: p.stage || 'unknown',
@@ -121,6 +125,8 @@ export default function Onboarding() {
       patient_id,
       name: formData.name.trim(),
       preferred_name: formData.preferred_name.trim() || formData.name.trim(),
+      photo_url: formData.photo_url || null,
+      hero_url: formData.hero_url || null,
       age_range: formData.age_range || null,
       preferred_address: formData.preferred_address || null,
       stage: formData.stage,

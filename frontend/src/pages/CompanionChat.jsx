@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { checkBackendHealth, fetchPatient, sendChatMessage, listPatients, synthesizeVoiceSpeech } from '../api.js'
 import { CADENCE_PRESETS } from '../cadencePresets.js'
 import { playClonedAudio, unlockAudio } from '../audioUtils.js'
+import { getPatientAvatar, getPatientHero, getElderChatSender } from '../avatarUtils.js'
 import KuralLogo from '../components/KuralLogo.jsx'
 import '../App.css'
 
@@ -49,20 +50,84 @@ function recordDistressTurn(patientId, sessionId, userText, distress) {
   }
 }
 
-function formatReactionNote(distress) {
-  if (!distress || distress.level === 'none') {
-    return 'Reaction: Gentle calm & attentive'
+function formatReactionNote(distress, companionText = '', userText = '') {
+  if (distress?.reaction_note) {
+    return `Reaction: ${distress.reaction_note}`
   }
-  if (distress.level === 'low') {
-    return 'Reaction: Mild reassurance applied'
+
+  const combined = `${userText} ${companionText}`.toLowerCase()
+  const isCrisis =
+    distress?.level === 'high' ||
+    combined.includes('dying') ||
+    combined.includes('die') ||
+    combined.includes('112') ||
+    combined.includes('108') ||
+    combined.includes('hurt yourself') ||
+    combined.includes('kill') ||
+    combined.includes('suicide') ||
+    combined.includes('emergency') ||
+    combined.includes('danger') ||
+    combined.includes('chest pain') ||
+    combined.includes('breathe') ||
+    combined.includes('fell down')
+
+  if (isCrisis) {
+    return 'Reaction: Urgent safety de-escalation & crisis protocol'
   }
-  if (distress.level === 'medium') {
+
+  if (distress?.level === 'high') {
+    return 'Reaction: Urgent de-escalation & emotional safety reassurance'
+  }
+
+  if (distress?.level === 'medium') {
+    if (combined.includes('where am i') || combined.includes('who are you') || combined.includes('confused') || combined.includes('lost') || combined.includes('what year')) {
+      return 'Reaction: Validation therapy & orientation anchor'
+    }
     return 'Reaction: Grounding cadence applied (confusion noted)'
   }
-  if (distress.level === 'high') {
-    return 'Reaction: Urgent de-escalation soothe (high distress flagged)'
+
+  if (distress?.level === 'low') {
+    return 'Reaction: Mild reassurance applied'
   }
-  return 'Reaction: Calm & attentive'
+
+  // General conversational reaction based on content
+  if (combined.includes('song') || combined.includes('kurai onrum') || combined.includes('hum') || combined.includes('sing') || combined.includes('raga') || combined.includes('music')) {
+    return 'Reaction: Musical reminiscence & joyful melody anchor'
+  }
+
+  if (combined.includes('jasmine') || combined.includes('coffee') || combined.includes('veranda') || combined.includes('garden') || combined.includes('tea') || combined.includes('camellia')) {
+    return 'Reaction: Cherished reminiscence & sensory recall'
+  }
+
+  if (combined.includes('breathe') || combined.includes('deep breath') || combined.includes('slow down') || combined.includes('rest')) {
+    return 'Reaction: Gentle grounding & breathing cadence'
+  }
+
+  if (combined.includes('hello') || combined.includes('morning') || combined.includes('vanakkam')) {
+    return 'Reaction: Warm maternal welcome & attentive presence'
+  }
+
+  return 'Reaction: Gentle calm & attentive'
+}
+
+function getReactionBadgeClass(distress, companionText = '', userText = '') {
+  const combined = `${userText} ${companionText}`.toLowerCase()
+  if (
+    distress?.level === 'high' ||
+    combined.includes('dying') ||
+    combined.includes('112') ||
+    combined.includes('108') ||
+    combined.includes('hurt yourself') ||
+    combined.includes('emergency')
+  ) {
+    return 'reaction-level-crisis'
+  }
+  if (distress?.level === 'medium') return 'reaction-level-medium'
+  if (distress?.level === 'low') return 'reaction-level-low'
+  if (combined.includes('song') || combined.includes('kurai onrum') || combined.includes('jasmine') || combined.includes('coffee')) {
+    return 'reaction-level-reminiscence'
+  }
+  return 'reaction-level-none'
 }
 
 function loadSavedMessages(patientId, currentLang = 'en') {
@@ -131,8 +196,7 @@ export default function CompanionChat() {
   // Default to Kalyani Amma (patient_kalyani)
   const [activePatientId, setActivePatientId] = useState(() => {
     const stored = localStorage.getItem('kural_active_patient_id')
-    const isCustom = stored && stored !== 'patient_001' && stored !== 'patient_kalyani'
-    return isCustom ? stored : 'patient_kalyani'
+    return stored || 'patient_kalyani'
   })
 
   // Default to English everywhere as requested
@@ -508,6 +572,7 @@ export default function CompanionChat() {
   // Dynamic caregiver link name based on actual relationships in the profile
   const caregiverRelation = patientData?.relationships?.[0]
   const caregiverName = caregiverRelation ? caregiverRelation.name : (activePatientId === 'patient_kalyani' ? 'Meera' : 'Clara')
+  const elderChatSender = getElderChatSender(patientData || { patient_id: activePatientId })
 
   // Dynamically build emotional anchors from the actual patient data
   const dynamicAnchors = []
@@ -802,7 +867,7 @@ export default function CompanionChat() {
           >
             <div className={`header-avatar-btn ${isSpeaking ? 'avatar-speaking-aura' : ''}`}>
               <img
-                src={activePatientId === 'patient_kalyani' ? '/avatar_amma.jpg' : '/avatar_nell.jpg'}
+                src={getPatientAvatar(patientData || allPatients.find((p) => p.patient_id === activePatientId))}
                 alt={preferredName}
                 className="header-avatar-img"
               />
@@ -831,7 +896,7 @@ export default function CompanionChat() {
                   >
                     <div className="dropdown-avatar-wrap">
                       <img
-                        src={p.patient_id === 'patient_kalyani' ? '/avatar_amma.jpg' : '/avatar_nell.jpg'}
+                        src={getPatientAvatar(p)}
                         alt={p.preferred_name || p.name}
                         className="dropdown-avatar-img"
                       />
@@ -933,7 +998,7 @@ export default function CompanionChat() {
           <div className="chat-compact-bar">
             <div className="chat-compact-elder">
               <img
-                src={activePatientId === 'patient_kalyani' ? '/avatar_amma.jpg' : '/avatar_nell.jpg'}
+                src={getPatientAvatar(patientData || allPatients.find((p) => p.patient_id === activePatientId))}
                 alt={preferredName}
                 className="chat-compact-avatar"
               />
@@ -992,7 +1057,7 @@ export default function CompanionChat() {
                   <div className={`timeline-bubble ${speakingMessageId === msg.id ? 'bubble-currently-speaking' : ''}`}>
                     <div className="bubble-header-bar">
                       <span className="bubble-sender-name">
-                        {msg.sender === 'user' ? `${caregiverName} (You)` : `${preferredName}'s Kural`}
+                        {msg.sender === 'user' ? `${elderChatSender} (You)` : `${preferredName}'s Kural`}
                         {speakingMessageId === msg.id && (
                           <span className="bubble-speaking-badge">
                             <span className="mini-bars">
@@ -1051,8 +1116,8 @@ export default function CompanionChat() {
                             🎙️ Voice preparing...
                           </span>
                         )}
-                        <div className={`bubble-reaction-note reaction-level-${msg.distress?.level || 'none'}`}>
-                          <span>{formatReactionNote(msg.distress)}</span>
+                        <div className={`bubble-reaction-note ${getReactionBadgeClass(msg.distress, msg.text, '')}`}>
+                          <span>{formatReactionNote(msg.distress, msg.text, '')}</span>
                           {msg.distress?.matched_keywords?.length > 0 && (
                             <span className="reaction-trigger-tag">
                               Triggers: {msg.distress.matched_keywords.join(', ')}
@@ -1229,14 +1294,14 @@ export default function CompanionChat() {
             {/* Dynamic Portrait Hero Card */}
             <div className="hero-portrait-card">
               <img
-                src={activePatientId === 'patient_kalyani' ? '/hero_family.jpg' : '/hero_nell.jpg'}
-                alt={activePatientId === 'patient_kalyani' ? 'Kalyani Amma and family' : 'Nell Vance and daughter'}
+                src={getPatientHero(patientData || allPatients.find((p) => p.patient_id === activePatientId))}
+                alt={`${preferredName} portrait`}
                 className="hero-portrait-image"
               />
               <div className="portrait-overlay-strip">
                 <div className="overlay-person-badge">
                   <img
-                    src={activePatientId === 'patient_kalyani' ? '/avatar_amma.jpg' : '/avatar_nell.jpg'}
+                    src={getPatientAvatar(patientData || allPatients.find((p) => p.patient_id === activePatientId))}
                     alt={preferredName}
                     className="overlay-mini-avatar-img"
                   />

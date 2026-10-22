@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { listPatients, getVoiceProfile, cloneCaregiverVoice, synthesizeVoiceSpeech } from '../api.js'
 import { CADENCE_PRESETS } from '../cadencePresets.js'
 import { base64ToAudioUrl, playClonedAudio, unlockAudio } from '../audioUtils.js'
+import { getPatientAvatar } from '../avatarUtils.js'
 import KuralLogo from '../components/KuralLogo.jsx'
 import '../App.css'
 
@@ -206,8 +207,7 @@ export default function CaregiverPortal() {
         if (patients && patients.length > 0) {
           setPatientsList(patients)
           const storedId = localStorage.getItem('kural_active_patient_id')
-          const isCustom = storedId && storedId !== 'patient_001' && storedId !== 'patient_kalyani'
-          const targetId = isCustom ? storedId : 'patient_kalyani'
+          const targetId = storedId || 'patient_kalyani'
           const matched =
             patients.find((p) => p.patient_id === targetId) ||
             patients.find((p) => p.patient_id === 'patient_kalyani') ||
@@ -614,7 +614,7 @@ Generated with love by Kural Dementia Companion Care.
       <div className="portal-avatar-wrap">
         <div className="portal-avatar-ring">
           <img
-            src={activePatient?.patient_id === 'patient_kalyani' ? '/avatar_amma.jpg' : '/avatar_nell.jpg'}
+            src={getPatientAvatar(activePatient)}
             alt={preferredName}
             className="portal-avatar-img"
           />

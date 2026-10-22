@@ -37,4 +37,6 @@ class Patient(BaseModel):
     significant_events: List[str] = []
     preferences: Preferences = Field(default_factory=Preferences)
     cherished_memories: List[str] = []
+    photo_url: Optional[str] = None
+    hero_url: Optional[str] = None
 

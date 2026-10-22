@@ -58,10 +58,40 @@ def score_distress(message: str, session_history: List[Dict[str, str]]) -> dict:
     if base_level == "none" and final_level != "none":
         reason = f"Escalated to {final_level} because this message was repeated {repetition_count} times (frustration/confusion signal)."
 
+    # Determine appropriate dynamic clinical reaction note
+    has_crisis = any(w in msg_lower for w in ["dying", "die", "kill", "suicide", "hurt myself", "harm myself", "emergency", "chest pain", "breathe", "bleeding", "சாக"])
+    has_disorientation = any(w in msg_lower for w in ["where am i", "who are you", "what is this place", "confused", "lost", "forgot"])
+    has_music = any(w in msg_lower for w in ["song", "sing", "ragam", "raga", "music", "kurai onrum", "subbulakshmi", "paatu", "பாட்டு"])
+    has_memory = any(w in msg_lower for w in ["jasmine", "coffee", "veranda", "garden", "tea", "mylapore", "temple", "husband", "wife", "school"])
+    has_calm = any(w in msg_lower for w in ["breathe", "slow down", "rest", "peace", "calm", "relax"])
+
+    if final_level == "high":
+        if has_crisis:
+            reaction_note = "Urgent safety de-escalation & crisis protocol"
+        else:
+            reaction_note = "Urgent de-escalation & emotional safety reassurance"
+    elif final_level == "medium":
+        if has_disorientation:
+            reaction_note = "Validation therapy & orientation anchor"
+        else:
+            reaction_note = "Empathetic companionship & calming cadence"
+    elif final_level == "low":
+        reaction_note = "Tender emotional comfort & soothing reassurance"
+    else:
+        if has_music:
+            reaction_note = "Musical reminiscence & joyful melody anchor"
+        elif has_memory:
+            reaction_note = "Cherished reminiscence & sensory recall"
+        elif has_calm:
+            reaction_note = "Gentle grounding & breathing cadence"
+        else:
+            reaction_note = "Attentive active listening & peaceful presence"
+
     return {
         "level": final_level,
         "matched_keywords": all_matched,
-        "reason": reason.strip()
+        "reason": reason.strip(),
+        "reaction_note": reaction_note
     }
 
 def handle_escalation(session_id: str, distress_result: dict) -> dict:

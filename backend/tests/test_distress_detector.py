@@ -59,6 +59,12 @@ class TestHighKeyword:
         result = _score("I want to go home now")
         assert result["level"] == "high"
 
+    def test_feel_like_dying_is_high(self):
+        result = _score("i feel like dying")
+        assert result["level"] == "high"
+        assert "feel like dying" in result["matched_keywords"] or "dying" in result["matched_keywords"]
+        assert "Urgent safety" in result.get("reaction_note", "")
+
     def test_reason_mentions_high_severity(self):
         result = _score("I am scared")
         assert "high-severity" in result["reason"].lower()
